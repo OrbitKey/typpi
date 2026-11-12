@@ -1,0 +1,314 @@
+"use client";
+
+import { Check, Info, Languages, Pencil, X } from "lucide-react";
+import { useState } from "react";
+
+import { Avatar } from "@/components/chat/avatar";
+import type { RubyLine } from "@/lib/lesson";
+import { cn } from "@/lib/utils";
+
+/* -------------------------------------------------------------------------- */
+
+export function Timestamp({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex w-full justify-center">
+      <span className="rounded-full bg-slate-100 px-3 py-1 font-display text-xs leading-4 font-medium text-text-secondary/70">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/** Japanese text with furigana as ruby units (17/26 base, 12/14 reading). */
+export function RubyText({ lines, furigana }: { lines: RubyLine[]; furigana: boolean }) {
+  return (
+    <div lang="ja" className="flex flex-col gap-0.5 font-jp text-[17px] leading-[26px] text-text-primary">
+      {lines.map((line, i) => (
+        <p key={i}>
+          {line.map((seg, j) =>
+            seg.ruby ? (
+              <ruby key={j} className="[ruby-position:over]">
+                {seg.text}
+                <rt className={cn("text-xs leading-[14px] text-text-secondary", !furigana && "invisible")}>
+                  {seg.ruby}
+                </rt>
+              </ruby>
+            ) : (
+              <span key={j}>{seg.text}</span>
+            )
+          )}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** Incoming message from a character: avatar + white card bubble + helper chips. */
+export function CharacterMessage({
+  avatar,
+  name,
+  lines,
+  romaji,
+  translation,
+  showTranslation,
+  withChips = true,
+}: {
+  avatar: string;
+  name: string;
+  lines: RubyLine[];
+  romaji: string;
+  translation: string;
+  /** Global translation toggle (header 文/A button) */
+  showTranslation: boolean;
+  withChips?: boolean;
+}) {
+  const [furigana, setFurigana] = useState(true);
+  const [showRomaji, setShowRomaji] = useState(false);
+  const [translate, setTranslate] = useState(false);
+  const translationVisible = showTranslation || translate;
+
+  return (
+    <div className="flex w-full max-w-[560px] items-start gap-3">
+      <span className="mt-1 shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
+        <Avatar src={avatar} alt={name} size={40} />
+      </span>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-2xl rounded-tl-[2px] border border-slate-200 bg-white p-[17px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]">
+          <RubyText lines={lines} furigana={furigana} />
+          {showRomaji && (
+            <p className="font-display text-[13px] leading-5 text-text-secondary italic">{romaji}</p>
+          )}
+          {translationVisible && (
+            <p className="border-t border-slate-100 pt-[9px] font-display text-sm leading-5 text-text-secondary">
+              {translation}
+            </p>
+          )}
+        </div>
+
+        {withChips && (
+          <div className="flex items-center gap-2 pl-1">
+            <HelperChip active={furigana} onClick={() => setFurigana((v) => !v)}>
+              <span lang="ja" className="text-[10px] leading-none font-bold">
+                あ
+              </span>
+              Furigana
+            </HelperChip>
+            <HelperChip active={showRomaji} onClick={() => setShowRomaji((v) => !v)}>
+              <span>Aa</span>
+              Romaji
+            </HelperChip>
+            <HelperChip active={translate} onClick={() => setTranslate((v) => !v)}>
+              <Languages className="size-3.5" aria-hidden />
+              Translate
+            </HelperChip>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HelperChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1 rounded-full px-2.5 py-1 font-display text-xs leading-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        active
+          ? "bg-brand-primary font-semibold text-white"
+          : "bg-slate-100 font-medium text-text-secondary hover:bg-slate-200"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Unsent draft (dashed). `children` is the rendered draft text. */
+export function DraftBubble({
+  children,
+  error,
+  errorTip,
+  onRetry,
+}: {
+  children: React.ReactNode;
+  error?: boolean;
+  errorTip?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex w-full flex-col items-end gap-1.5">
+      <div
+        className={cn(
+          "rounded-2xl rounded-tr-[2px] border-2 border-dashed px-[22px] py-[14px] font-jp text-[17px] leading-[27.63px] font-medium text-text-primary",
+          error ? "border-error-line bg-error-tint" : "border-draft-line bg-surface-tint"
+        )}
+      >
+        {children}
+      </div>
+      <p className="flex items-center gap-1 pr-1 font-display text-xs leading-4 font-medium text-text-secondary">
+        <Pencil className="size-3.5" aria-hidden />
+        Draft · not sent yet
+      </p>
+      {errorTip && (
+        <div
+          role="alert"
+          className="mt-2 flex items-center gap-3 rounded-[12px] border border-error-line bg-error-tint py-[6px] pr-3 pl-2.5 font-display text-[13px] leading-[17px] text-error"
+        >
+          <span className="flex items-center gap-1.5 font-medium">
+            <X className="size-3.5" strokeWidth={2.5} aria-hidden />
+            <span lang="ja-Latn">{errorTip}</span>
+          </span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-sm text-xs leading-4 font-semibold text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Sent message with success feedback (stamp + XP + praise). */
+export function SentBubble({
+  text,
+  sentAt,
+  stamp,
+  xp,
+  praise,
+}: {
+  text: string;
+  sentAt: string;
+  stamp: string[];
+  xp: number;
+  praise: string;
+}) {
+  return (
+    <div className="flex w-full flex-col items-end gap-1.5">
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-tr-[2px] border border-draft-line bg-surface-tint px-[22px] py-[12px]">
+        <span lang="ja" className="font-jp text-[17px] leading-7 font-medium text-text-primary">
+          {text}
+        </span>
+        <span className="flex size-4 items-center justify-center rounded-full bg-success text-white">
+          <Check className="size-2.5" strokeWidth={3.5} aria-label="Sent" />
+        </span>
+      </div>
+      <p className="pr-1 font-display text-xs leading-[17px] font-medium text-text-secondary">
+        Sent · {sentAt}
+      </p>
+
+      <div className="mt-3 flex items-center gap-3 pt-1" aria-live="polite">
+        {/* Coral circular inkan / stamp */}
+        <span
+          lang="ja"
+          aria-label={stamp.join("")}
+          className="flex size-10 -rotate-12 flex-col items-center justify-center rounded-full border-2 border-action-accent text-center font-jp text-[11px] leading-[12px] font-bold text-action-accent"
+        >
+          {stamp.map((s) => (
+            <span key={s}>{s}</span>
+          ))}
+        </span>
+        <span className="flex flex-col items-start gap-1">
+          <span className="rounded-full border border-amber-200/80 bg-amber-50 px-2 py-0.5 font-display text-xs leading-4 font-semibold text-amber-900">
+            ⭐ +{xp} XP
+          </span>
+          <span className="max-w-[160px] font-display text-xs leading-4 text-text-secondary">
+            {praise}
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Hint from the guide, inserted in the stream under the draft. */
+export function HintMessage({
+  avatar,
+  index,
+  max,
+  cost,
+  children,
+  steps,
+  currentStep,
+}: {
+  avatar: string;
+  index: number;
+  max: number;
+  cost: number;
+  children: React.ReactNode;
+  steps?: string[];
+  currentStep?: number;
+}) {
+  const left = max - index;
+  return (
+    <div className="flex w-full items-start gap-3" aria-live="polite">
+      <span className="shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
+        <Avatar src={avatar} alt="Hana" size={40} />
+      </span>
+      <div className="flex w-full max-w-[460px] flex-col gap-2 rounded-2xl rounded-tl-[2px] bg-bubble-guide px-4 pt-3 pb-3.5">
+        <div className="flex items-center gap-2 font-display">
+          <span className="text-xs leading-4 font-semibold tracking-[0.2px] text-text-secondary uppercase">
+            Hint {index} of {max}
+          </span>
+          <span className="rounded-full bg-white px-2 py-0.5 text-xs leading-4 font-semibold text-error">
+            −{cost} XP
+          </span>
+        </div>
+        <p className="text-[15px] leading-[22px] text-ink">{children}</p>
+        {steps && (
+          <ol className="flex flex-wrap gap-1.5" aria-label="Romaji steps">
+            {steps.map((s, i) => (
+              <li
+                key={s + i}
+                className={cn(
+                  "rounded-md px-2.5 py-0.5 font-display text-sm leading-5 font-semibold",
+                  i < (currentStep ?? 0) && "bg-white/60 text-text-secondary",
+                  i === currentStep && "bg-action-accent text-white",
+                  i > (currentStep ?? 0) && "bg-white text-text-primary"
+                )}
+              >
+                {s}
+              </li>
+            ))}
+          </ol>
+        )}
+        <p className="font-display text-xs leading-[18px] text-text-secondary">
+          {left > 0
+            ? `${left} hint${left === 1 ? "" : "s"} left · Tab for the next hint`
+            : "No hints left"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function CultureTip({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex w-full gap-3 rounded-2xl border border-line-panel bg-surface-page px-4 py-3">
+      <Info className="mt-0.5 size-5 shrink-0 text-icon-default" aria-hidden />
+      <div>
+        <p className="font-display text-xs leading-4 font-semibold text-text-secondary">Culture tip</p>
+        <p className="pt-0.5 text-[15px] leading-[22px] text-text-primary">{children}</p>
+      </div>
+    </div>
+  );
+}

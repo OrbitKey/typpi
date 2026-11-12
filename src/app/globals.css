@@ -1,0 +1,164 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+ * Typpi design tokens — from the Figma "Design System" page.
+ * Brand + semantic tokens are the official palette. The "off-palette" group
+ * is still used inside the desktop frames (see Figma › Design System ›
+ * "Off-palette colours still in the frames") and should be mapped to the
+ * official ramps once the designer confirms them.
+ * ------------------------------------------------------------------------ */
+:root {
+  /* Brand */
+  --brand-primary: #242a30; /* dark UI, primary buttons, main text */
+  --brand-secondary: #e66b50; /* accent orange (confirm vs #E86B50) */
+  --brand-secondary-text: #d13e1e; /* AA-contrast accent for text/links */
+  --brand-tertiary: #eaf1fc; /* light blue tint, selected states */
+  --brand-neutral: #5f6b78; /* secondary text, icons */
+
+  /* Semantic */
+  --text-primary: var(--brand-primary);
+  --text-secondary: var(--brand-neutral);
+  --text-accent: var(--brand-secondary-text);
+  --surface-default: #ffffff;
+  --surface-page: #f6f9fe;
+  --surface-tint: var(--brand-tertiary);
+  --surface-accent-tint: #f9dad3;
+  --action-primary: var(--brand-primary);
+  --action-accent: var(--brand-secondary);
+  --icon-default: var(--brand-neutral);
+
+  /* Off-palette (still in the frames — to be resolved) */
+  --ink: #111d27;
+  --ink-strong: #10161b;
+  --ink-soft: #1c1a24;
+  --muted-ink: #44474b;
+  --line: #e4e8ee;
+  --line-panel: #d7e4f3;
+  --line-soft: #e3efff;
+  --bubble-guide: #eee9fa;
+  --bubble-guide-line: #dcd4f2;
+  --card-selected: #f0f5ff;
+  --pill: #edf4ff;
+  --draft-line: #b8d5fa; /* dashed border of an unsent draft */
+  --success: #1f7a4d;
+  --success-tint: #e5f4eb;
+  --error: var(--brand-secondary-text);
+  --error-tint: #fdf1ee;
+  --error-line: #f3c4b8;
+
+  /* shadcn/ui theme, mapped onto Typpi tokens */
+  --radius: 1rem;
+  --background: var(--surface-page);
+  --foreground: var(--text-primary);
+  --card: var(--surface-default);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-default);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--action-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-tint);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-tint);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-tint);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--brand-secondary-text);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand-primary);
+}
+
+@theme inline {
+  /* Fonts — Headline & Label = Inter · Body = Noto Sans · Japanese = Noto Sans JP.
+     The script fonts are fallbacks so every language in the picker renders. */
+  --font-sans:
+    "Noto Sans Variable", "Noto Sans JP Variable", "Noto Sans SC Variable",
+    "Noto Sans KR Variable", "Noto Sans Devanagari Variable",
+    "Noto Sans Bengali Variable", "Noto Sans Arabic Variable",
+    "Noto Sans Sinhala Variable", "Noto Sans Myanmar", ui-sans-serif,
+    system-ui, sans-serif;
+  --font-display: "Inter Variable", var(--font-sans);
+  --font-jp: "Noto Sans JP Variable", var(--font-sans);
+
+  /* Typpi colours → Tailwind utilities (bg-brand-primary, text-ink, …) */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-secondary-text: var(--brand-secondary-text);
+  --color-brand-tertiary: var(--brand-tertiary);
+  --color-brand-neutral: var(--brand-neutral);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-accent: var(--text-accent);
+  --color-surface-default: var(--surface-default);
+  --color-surface-page: var(--surface-page);
+  --color-surface-tint: var(--surface-tint);
+  --color-surface-accent-tint: var(--surface-accent-tint);
+  --color-action-primary: var(--action-primary);
+  --color-action-accent: var(--action-accent);
+  --color-icon-default: var(--icon-default);
+  --color-ink: var(--ink);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted-ink: var(--muted-ink);
+  --color-line: var(--line);
+  --color-line-panel: var(--line-panel);
+  --color-line-soft: var(--line-soft);
+  --color-bubble-guide: var(--bubble-guide);
+  --color-bubble-guide-line: var(--bubble-guide-line);
+  --color-card-selected: var(--card-selected);
+  --color-pill: var(--pill);
+  --color-draft-line: var(--draft-line);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-error: var(--error);
+  --color-error-tint: var(--error-tint);
+  --color-error-line: var(--error-line);
+
+  /* shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --shadow-xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+  --shadow-cta: 0px 8px 12px rgba(36, 42, 48, 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+  :lang(ja) {
+    font-family: var(--font-jp);
+  }
+}

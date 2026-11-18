@@ -5,6 +5,7 @@ export type Profile = {
   email: string | null;
   language: string;
   plan: string;
+  avatar_url: string | null;
 };
 
 export async function loadProfile() {
@@ -16,7 +17,7 @@ export async function loadProfile() {
 
   const { data } = await supabase
     .from("profiles")
-    .select("display_name, email, language, plan")
+    .select("display_name, email, language, plan, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -28,6 +29,7 @@ export async function loadProfile() {
       email: user.email ?? null,
       language: "en",
       plan: "free",
+      avatar_url: null,
     }) as Profile,
   };
 }

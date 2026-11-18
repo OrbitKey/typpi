@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SettingsPage } from "@/components/settings/settings-nav";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,10 @@ export default function ProfileSettings() {
   const [savedName, setSavedName] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -41,6 +44,7 @@ export default function ProfileSettings() {
       setEmail(result.email);
       setName(nextName);
       setSavedName(nextName);
+      setAvatarUrl(result.profile.avatar_url);
     });
     return () => {
       cancelled = true;
@@ -66,6 +70,43 @@ export default function ProfileSettings() {
     setSavedName(nextName);
   };
 
+  const changePhoto = async (file: File | undefined) => {
+    if (!file || !userId) return;
+    if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
+      setError("Use a JPG, PNG or GIF.");
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setError("Photo must be 1MB or smaller.");
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+    const ext = file.type === "image/png" ? "png" : file.type === "image/gif" ? "gif" : "jpg";
+    const path = `${userId}/avatar.${ext}`;
+    const supabase = createClient();
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+    });
+    if (uploadError) {
+      setUploading(false);
+      setError(uploadError.message);
+      return;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const url = `${data.publicUrl}?v=${Date.now()}`;
+    const { error: updateError } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId);
+    setUploading(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setAvatarUrl(url);
+  };
+
   const removeAccount = async () => {
     setDeleting(true);
     setError("");
@@ -82,12 +123,32 @@ export default function ProfileSettings() {
   return (
     <SettingsPage title="Profile" width={560}>
       <div className="flex items-center gap-5">
-        <span className="flex size-20 items-center justify-center rounded-full bg-brand-primary font-display text-2xl font-semibold text-white">
-          {profileInitial(name, email)}
-        </span>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-20 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span className="flex size-20 items-center justify-center rounded-full bg-brand-primary font-display text-2xl font-semibold text-white">
+            {profileInitial(name, email)}
+          </span>
+        )}
         <div>
-          <Button variant="outline" size="sm" className="rounded-[8px] font-normal">
-            Change photo
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif"
+            className="sr-only"
+            onChange={(event) => {
+              void changePhoto(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-[8px] font-normal"
+            disabled={uploading || !userId}
+            onClick={() => fileRef.current?.click()}
+          >
+            {uploading ? "Uploading…" : "Change photo"}
           </Button>
           <p className="pt-1.5 text-xs text-text-secondary">JPG, GIF or PNG. 1MB max.</p>
         </div>

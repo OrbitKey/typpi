@@ -23,6 +23,7 @@ export function SettingsNav() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [plan, setPlan] = useState("Free plan");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +32,7 @@ export function SettingsNav() {
       setName(result.profile.display_name?.trim() || result.email);
       setEmail(result.email);
       setPlan(planLabel(result.profile.plan));
+      setAvatarUrl(result.profile.avatar_url);
     });
     return () => {
       cancelled = true;
@@ -47,9 +49,13 @@ export function SettingsNav() {
   return (
     <aside className="sticky top-0 flex h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-display text-sm font-semibold text-white">
-          {profileInitial(name, email)}
-        </span>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-10 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-display text-sm font-semibold text-white">
+            {profileInitial(name, email)}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="flex items-center justify-between gap-2">
             <span className="truncate font-display text-[15px] leading-5 font-semibold text-text-primary">

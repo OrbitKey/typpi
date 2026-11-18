@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { SettingsPage } from "@/components/settings/settings-nav";
 import { Button } from "@/components/ui/button";
@@ -16,19 +17,73 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const initial = { name: "Alex Lee", email: "alex.lee@example.com" };
+import { loadProfile, profileInitial } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/client";
 
 /** D-SET-01 · Profile */
 export default function ProfileSettings() {
-  const [form, setForm] = useState(initial);
-  const dirty = form.name !== initial.name || form.email !== initial.email;
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savedName, setSavedName] = useState("");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const dirty = name.trim() !== savedName;
+
+  useEffect(() => {
+    let cancelled = false;
+    loadProfile().then((result) => {
+      if (cancelled || !result) return;
+      const nextName = result.profile.display_name?.trim() ?? "";
+      setUserId(result.userId);
+      setEmail(result.email);
+      setName(nextName);
+      setSavedName(nextName);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const save = async () => {
+    if (!userId) return;
+    setSaving(true);
+    setError("");
+    const supabase = createClient();
+    const nextName = name.trim();
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ display_name: nextName })
+      .eq("id", userId);
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setName(nextName);
+    setSavedName(nextName);
+  };
+
+  const removeAccount = async () => {
+    setDeleting(true);
+    setError("");
+    const response = await fetch("/auth/delete", { method: "POST" });
+    if (!response.ok) {
+      setDeleting(false);
+      setError("Could not delete the account. Try again.");
+      return;
+    }
+    router.push("/signup");
+    router.refresh();
+  };
 
   return (
     <SettingsPage title="Profile" width={560}>
       <div className="flex items-center gap-5">
         <span className="flex size-20 items-center justify-center rounded-full bg-brand-primary font-display text-2xl font-semibold text-white">
-          A
+          {profileInitial(name, email)}
         </span>
         <div>
           <Button variant="outline" size="sm" className="rounded-[8px] font-normal">
@@ -40,28 +95,26 @@ export default function ProfileSettings() {
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="name" className="font-normal">Name</Label>
-        <Input id="name" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="email" className="font-normal">Email</Label>
-        <Input id="email" type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-      </div>
-      <div className="flex items-center justify-between border-y border-line py-3">
-        <div>
-          <p className="font-display text-sm text-text-primary">Password</p>
-          <p aria-label="Password hidden" className="text-sm tracking-[2px] text-text-secondary">
-            ••••••••
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="rounded-[8px] font-normal">
-          Change password
-        </Button>
+        <Input id="email" type="email" autoComplete="email" value={email} readOnly />
       </div>
 
       <div>
-        <Button disabled={!dirty} className="h-11 rounded-[10px] px-5 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100">
-          Save changes
+        <Button
+          disabled={!dirty || saving}
+          onClick={save}
+          className="h-11 rounded-[10px] px-5 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100"
+        >
+          {saving ? "Saving…" : "Save changes"}
         </Button>
+        {error && (
+          <p role="alert" className="pt-2 text-sm text-error">
+            {error}
+          </p>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-4 border-t border-line pt-6">
@@ -86,8 +139,9 @@ export default function ProfileSettings() {
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
-              {/* TODO(backend): delete account */}
-              <Button variant="destructive">Delete account</Button>
+              <Button variant="destructive" onClick={removeAccount} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete account"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

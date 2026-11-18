@@ -2,19 +2,39 @@
 
 import { ArrowRight, Inbox, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { RubyText } from "@/components/lesson/messages";
 import { normalise } from "@/lib/onboarding";
 import { phraseGroups } from "@/lib/phrases";
+import { loadLessonProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
 /** D-PHR-01 · Phrases and D-PHR-02 · Phrases (Empty) */
 export function PhrasesView({ empty = false }: { empty?: boolean }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
-  const groups = useMemo(() => (empty ? [] : phraseGroups), [empty]);
+  const [groups, setGroups] = useState<typeof phraseGroups>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (empty) {
+      setGroups([]);
+      setReady(true);
+      return;
+    }
+    loadLessonProgress().then((rows) => {
+      if (cancelled) return;
+      const done = new Set(rows.map((row) => row.lesson_id));
+      setGroups(phraseGroups.filter((group) => group.lessonId && done.has(group.lessonId)));
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [empty]);
   const total = groups.reduce((n, g) => n + g.phrases.length, 0);
   const sections = ["All", ...new Set(groups.flatMap((g) => g.phrases.map((p) => p.section)))];
 
@@ -39,13 +59,15 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
           <header>
             <h1 className="font-display text-2xl leading-8 font-semibold text-text-primary">Phrases</h1>
             <p className="text-sm leading-5 text-text-secondary">
-              {total === 0
-                ? "0 phrases"
-                : `${total} phrases from the lessons you have completed`}
+              {!ready
+                ? "Loading phrases"
+                : total === 0
+                  ? "0 phrases"
+                  : `${total} phrases from the lessons you have completed`}
             </p>
           </header>
 
-          {total === 0 ? (
+          {!ready ? null : total === 0 ? (
             <div className="flex min-h-[560px] flex-col items-center justify-center gap-2 text-center">
               <Inbox className="size-9 text-icon-default" strokeWidth={1.5} aria-hidden />
               <h2 className="pt-3 font-display text-lg font-semibold text-text-primary">No phrases yet</h2>

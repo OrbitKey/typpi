@@ -3,7 +3,7 @@
 import { ArrowRight, Bookmark, BookmarkCheck, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Avatar } from "@/components/chat/avatar";
@@ -13,6 +13,7 @@ import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { runningLate as lesson } from "@/lib/lesson";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Option = { base: string; ruby: string; rest: string; correct: boolean };
@@ -58,7 +59,25 @@ export default function LessonCompletePage() {
 
   const current = questions[q];
   const quizXp = score * XP_PER_ANSWER;
-  const xp = 400 + (done ? quizXp : 0); // SAMPLE DATA
+  const xp = 60 + (done ? quizXp : 0);
+
+  useEffect(() => {
+    if (!done && !skipped) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      await supabase.from("lesson_progress").upsert(
+        {
+          user_id: user.id,
+          lesson_id: "running-late",
+          stars: 2,
+          xp,
+          completed_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,lesson_id" }
+      );
+    });
+  }, [done, skipped, xp]);
 
   const check = () => {
     const nextScore = score + (current.options[selected].correct ? 1 : 0);

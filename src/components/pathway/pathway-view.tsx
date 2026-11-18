@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ChevronUp, Clock, Compass, Lock, Play, Sparkles, Trophy, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Avatar } from "@/components/chat/avatar";
@@ -10,6 +10,8 @@ import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { lockedSections, workLessons } from "@/lib/pathway";
+import { loadProfile } from "@/lib/profile";
+import { loadLessonProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,17 +19,48 @@ import { cn } from "@/lib/utils";
  * upsell banner, lessons 4–6 + review need a plan ("Upgrade" opens the plans modal).
  */
 export function PathwayView({ plan }: { plan: "free" | "paid" }) {
-  const free = plan === "free";
+  const [accountFree, setAccountFree] = useState(true);
+  const [firstName, setFirstName] = useState("");
+  const [xp, setXp] = useState(0);
+  const [completed, setCompleted] = useState(0);
+  const [starsById, setStarsById] = useState<Record<string, number>>({});
   const [banner, setBanner] = useState(true);
   const [workOpen, setWorkOpen] = useState(true);
   const [showDone, setShowDone] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
   const yuki = characters.yuki;
+  const free = plan === "free" || accountFree;
 
-  const completed = free ? 3 : 1;
-  const next = workLessons[completed];
-  const nextLocked = free && !!next.paid;
-  const starsEarned = workLessons.slice(0, completed).reduce((s, l) => s + (l.stars ?? 0), 0);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([loadProfile(), loadLessonProgress()]).then(([profile, progress]) => {
+      if (cancelled) return;
+      const savedPlan = profile?.profile.plan;
+      setAccountFree(savedPlan !== "individual" && savedPlan !== "premium");
+      const label = profile?.profile.display_name?.trim() || profile?.email.split("@")[0] || "";
+      setFirstName(label);
+      const byId = Object.fromEntries(progress.map((row) => [row.lesson_id, row.stars]));
+      setStarsById(byId);
+      setXp(progress.reduce((sum, row) => sum + row.xp, 0));
+      let doneCount = 0;
+      for (const lesson of workLessons) {
+        if (!byId[lesson.id] && byId[lesson.id] !== 0) break;
+        doneCount += 1;
+      }
+      setCompleted(doneCount);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const next = workLessons[Math.min(completed, workLessons.length - 1)];
+  const nextLocked = free && !!next.paid && completed < workLessons.length;
+  const doneLessons = workLessons.slice(0, completed).map((lesson) => ({
+    ...lesson,
+    stars: starsById[lesson.id] ?? 0,
+  }));
+  const starsEarned = doneLessons.reduce((sum, lesson) => sum + lesson.stars, 0);
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -69,7 +102,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
             <div>
               {/* SAMPLE DATA: greeting + name */}
               <h1 className="font-display text-[24px] leading-8 font-semibold tracking-[-0.3px] text-text-primary">
-                Good afternoon, Alex
+                Good afternoon{firstName ? `, ${firstName}` : ""}
               </h1>
               <p className="pt-0.5 text-sm leading-5 text-text-secondary">
                 Section 1 of 5 <span aria-hidden className="text-slate-300">•</span> Work
@@ -77,7 +110,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
             </div>
             <span className="flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-3.5 py-1.5 font-display text-sm font-semibold text-amber-900">
               <span aria-hidden>⭐</span>
-              415 XP
+              {xp} XP
             </span>
           </div>
 
@@ -182,15 +215,16 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
               {workOpen &&
                 (free ? (
                   <ol className="divide-y divide-line border-t border-line bg-surface-page/60">
+                    {completed > 0 && (
                     <li>
                       <div className="flex items-center gap-4 px-6 py-3">
                         <DoneDot />
                         <div className="min-w-0 flex-1">
                           <p className="font-display text-[13px] font-semibold text-text-primary">
-                            {completed} lessons completed
+                            {completed} {completed === 1 ? "lesson" : "lessons"} completed
                           </p>
                           <p className="truncate text-[13px] text-text-secondary">
-                            {workLessons.slice(0, completed).map((l) => l.title).join(" · ")}
+                            {doneLessons.map((l) => l.title).join(" · ")}
                           </p>
                         </div>
                         <span className="font-display text-[13px] font-semibold text-brand-secondary-text">
@@ -207,18 +241,23 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                       </div>
                       {showDone && (
                         <ul className="flex flex-col gap-1 px-6 pb-3 pl-[68px]">
-                          {workLessons.slice(0, completed).map((l) => (
+                          {doneLessons.map((l) => (
                             <li key={l.title} className="flex items-center justify-between text-[13px] text-text-secondary">
                               {l.title}
-                              <Stars value={l.stars ?? 0} size={12} />
+                              <Stars value={l.stars} size={12} />
                             </li>
                           ))}
                         </ul>
                       )}
                     </li>
-                    {workLessons.slice(completed).map((l) => (
-                      <CompactRow key={l.title} title={l.title} subtitle={l.subtitle} onUpgrade={() => setPlansOpen(true)} />
-                    ))}
+                    )}
+                    {workLessons.slice(completed).map((l) =>
+                      l.paid ? (
+                        <CompactRow key={l.id} title={l.title} subtitle={l.subtitle} onUpgrade={() => setPlansOpen(true)} />
+                      ) : (
+                        <UpcomingRow key={l.id} title={l.title} subtitle={l.subtitle} current={l.id === next.id} />
+                      )
+                    )}
                     <CompactRow title="Section review" subtitle="Quick test of all 6 lessons" review onUpgrade={() => setPlansOpen(true)} />
                   </ol>
                 ) : (
@@ -227,7 +266,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                       <LessonRow
                         key={l.title}
                         index={i + 1}
-                        lesson={l}
+                        lesson={{ ...l, stars: starsById[l.id] }}
                         status={i < completed ? "done" : i === completed ? "current" : "locked"}
                       />
                     ))}
@@ -355,6 +394,22 @@ function LessonRow({
           {body}
         </div>
       )}
+    </li>
+  );
+}
+
+/** Next free lesson. The screen for it is not built yet, so there is no upgrade wall. */
+function UpcomingRow({ title, subtitle, current }: { title: string; subtitle: string; current: boolean }) {
+  return (
+    <li className="flex items-center gap-4 px-6 py-3">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
+        <Play className="size-3 fill-white" aria-hidden />
+      </span>
+      <span className="flex-1">
+        <span className="block font-display text-[13px] font-medium text-text-primary">{title}</span>
+        <span className="block text-[13px] text-text-secondary">{subtitle}</span>
+      </span>
+      <span className="font-display text-xs font-semibold text-text-secondary">{current ? "Up next" : "Later"}</span>
     </li>
   );
 }

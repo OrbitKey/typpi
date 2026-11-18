@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, MailOpen, RotateCw } from "lucide-react";
+import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, RotateCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Stars } from "@/components/ui/stars";
 import { Switch } from "@/components/ui/switch";
 import { characters } from "@/lib/characters";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Step = "start" | "email" | "sent" | "goal";
@@ -33,21 +34,102 @@ export default function SignupPage() {
   const [reminder, setReminder] = useState(false);
   const [time, setTime] = useState("19:00");
   const [resent, setResent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (step === "email") emailRef.current?.focus();
   }, [step]);
 
-  const submitEmail = (e: React.FormEvent) => {
+  // Returning from the magic link: the callback set the session, then sent us here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth") {
+      setEmailError("That sign-in link didn't work. Send a new one.");
+      setStep("email");
+      return;
+    }
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setStep("goal");
+    });
+  }, []);
+
+  const sendLink = async () => {
+    setSending(true);
+    setEmailError("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setSending(false);
+    if (error) {
+      setEmailError(error.message);
+      return false;
+    }
+    return true;
+  };
+
+  const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError("Enter a valid email address, like you@email.com");
       return;
     }
+    if (await sendLink()) setStep("sent");
+  };
+
+  const resendLink = async () => {
+    if (await sendLink()) setResent(true);
+  };
+
+  const saveGoal = async () => {
+    setSaving(true);
     setEmailError("");
-    // TODO(backend): supabase.auth.signInWithOtp({ email })
-    setStep("sent");
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      setEmailError("Sign in again to save your goal.");
+      setStep("email");
+      return;
+    }
+
+    const patch: {
+      daily_goal_minutes: number;
+      reminder_enabled: boolean;
+      reminder_time: string;
+      language?: string;
+      purpose?: string;
+      level?: string;
+    } = {
+      daily_goal_minutes: Number(goal),
+      reminder_enabled: reminder,
+      reminder_time: time,
+    };
+
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("typpi.onboarding") ?? "null");
+      if (saved && typeof saved === "object") {
+        if (typeof saved.language === "string") patch.language = saved.language;
+        if (saved.purpose === "work" || saved.purpose === "daily") patch.purpose = saved.purpose;
+        if (saved.level === "never" || saved.level === "little" || saved.level === "confident") {
+          patch.level = saved.level;
+        }
+      }
+    } catch {
+      // Onboarding was never stored in this tab.
+    }
+
+    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      setEmailError(error.message);
+      return;
+    }
+    router.push("/pathway");
   };
 
   return (
@@ -235,8 +317,8 @@ export default function SignupPage() {
                   {emailError}
                 </p>
               )}
-              <PrimaryButton type="submit" className="font-bold">
-                Send me a link
+              <PrimaryButton type="submit" className="font-bold" disabled={sending}>
+                {sending ? "Sending…" : "Send me a link"}
                 <ArrowRight className="size-4" aria-hidden />
               </PrimaryButton>
               <button
@@ -252,23 +334,20 @@ export default function SignupPage() {
 
           {step === "sent" && (
             <>
-              {/* Simulates opening the magic link (no backend yet) */}
               <button
                 type="button"
-                onClick={() => setStep("goal")}
-                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] border border-slate-300 bg-white font-display text-[15px] font-medium text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <MailOpen className="size-4" aria-hidden />
-                Open email app
-              </button>
-              <button
-                type="button"
-                onClick={() => setResent(true)}
-                className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={resendLink}
+                disabled={sending}
+                className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <RotateCw className="size-3.5" aria-hidden />
                 {resent ? "Link sent again" : "Resend link"}
               </button>
+              {emailError && (
+                <p role="alert" className="text-sm text-error">
+                  {emailError}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => setStep("email")}
@@ -280,10 +359,17 @@ export default function SignupPage() {
           )}
 
           {step === "goal" && (
-            <PrimaryButton onClick={() => router.push("/pathway")}>
-              Start next lesson
-              <ArrowRight className="size-4" aria-hidden />
-            </PrimaryButton>
+            <>
+              <PrimaryButton onClick={saveGoal} disabled={saving}>
+                {saving ? "Saving…" : "Start next lesson"}
+                <ArrowRight className="size-4" aria-hidden />
+              </PrimaryButton>
+              {emailError && (
+                <p role="alert" className="text-sm text-error">
+                  {emailError}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

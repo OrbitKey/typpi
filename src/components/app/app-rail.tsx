@@ -3,7 +3,9 @@
 import { Bookmark, GraduationCap, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
+import { loadProfile, profileInitial } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -18,6 +20,18 @@ const nav = [
  */
 export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" | "settings" }) {
   const pathname = usePathname();
+  const [initial, setInitial] = useState("?");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadProfile().then((result) => {
+      if (cancelled || !result) return;
+      setInitial(profileInitial(result.profile.display_name, result.email));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   return (
     <aside className="sticky top-0 flex h-screen w-[72px] shrink-0 flex-col items-center justify-between border-r border-slate-200 bg-white py-5">
@@ -73,7 +87,7 @@ export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" |
             active === "settings" && "shadow-[0_0_0_2px_var(--brand-primary)]"
           )}
         >
-          A
+          {initial}
         </span>
         <span className="absolute -right-1 -bottom-1 rounded-full border border-white bg-brand-secondary-text px-[7px] py-[3px] font-display text-[11px] leading-[10px] font-bold text-white drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]">
           L2

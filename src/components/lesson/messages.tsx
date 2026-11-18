@@ -43,6 +43,27 @@ export function RubyText({ lines, furigana }: { lines: RubyLine[]; furigana: boo
   );
 }
 
+/** Three dots shown for 1.5s before the character answers. */
+export function TypingMessage({ avatar, name }: { avatar: string; name: string }) {
+  return (
+    <div className="flex w-full max-w-[560px] items-start gap-3" aria-live="polite">
+      <span className="mt-1 shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
+        <Avatar src={avatar} alt="" size={40} />
+      </span>
+      <div className="flex h-11 items-center gap-1 rounded-2xl rounded-tl-[2px] border border-slate-200 bg-white px-4">
+        <span className="sr-only">{name} is typing</span>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="size-1.5 animate-bounce rounded-full bg-text-secondary motion-reduce:animate-none"
+            style={{ animationDelay: `${i * 150}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Incoming message from a character: avatar + white card bubble + helper chips. */
 export function CharacterMessage({
   avatar,

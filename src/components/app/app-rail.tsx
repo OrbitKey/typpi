@@ -5,13 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
+import { type MessageKey } from "@/lib/i18n";
 import { loadProfile, profileInitial } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
-const nav = [
-  { href: "/pathway", label: "Pathway", icon: GraduationCap },
-  { href: "/lesson", label: "Chats", icon: MessageCircle },
-  { href: "/phrases", label: "Phrases", icon: Bookmark },
+const nav: { href: string; label: MessageKey; icon: typeof GraduationCap }[] = [
+  { href: "/pathway", label: "pathway", icon: GraduationCap },
+  { href: "/lesson", label: "chats", icon: MessageCircle },
+  { href: "/phrases", label: "phrases", icon: Bookmark },
 ];
 
 /**
@@ -20,6 +22,7 @@ const nav = [
  */
 export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" | "settings" }) {
   const pathname = usePathname();
+  const { t } = useLocale();
   const [initial, setInitial] = useState("?");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -65,7 +68,7 @@ export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" |
                 )}
               >
                 <Icon className="size-5" strokeWidth={1.75} aria-hidden />
-                <span className="pt-1">{label}</span>
+                <span className="pt-1">{t(label)}</span>
                 {isActive && (
                   <span
                     aria-hidden

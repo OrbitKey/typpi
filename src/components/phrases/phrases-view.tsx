@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { RubyText } from "@/components/lesson/messages";
 import { normalise } from "@/lib/onboarding";
 import { phraseGroups } from "@/lib/phrases";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 /** D-PHR-01 · Phrases and D-PHR-02 · Phrases (Empty) */
 export function PhrasesView({ empty = false }: { empty?: boolean }) {
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [groups, setGroups] = useState<typeof phraseGroups>([]);
@@ -57,7 +59,7 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 px-8 py-8">
           <header>
-            <h1 className="font-display text-2xl leading-8 font-semibold text-text-primary">Phrases</h1>
+            <h1 className="font-display text-2xl leading-8 font-semibold text-text-primary">{t("phrasesTitle")}</h1>
             <p className="text-sm leading-5 text-text-secondary">
               {!ready
                 ? "Loading phrases"
@@ -78,7 +80,7 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
                 href="/pathway"
                 className="mt-4 flex h-14 items-center gap-1.5 rounded-[14px] bg-brand-primary px-14 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Go to Pathway
+                {t("goToPathway")}
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
             </div>
@@ -87,12 +89,12 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
               <div className="flex flex-col gap-3">
                 <label className="flex h-12 items-center gap-2.5 rounded-[12px] border border-line bg-white px-4 focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/20">
                   <Search className="size-4 text-icon-default" aria-hidden />
-                  <span className="sr-only">Search phrases</span>
+                  <span className="sr-only">{t("searchPhrases")}</span>
                   <input
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search phrases"
+                    placeholder={t("searchPhrases")}
                     className="w-full bg-transparent text-[15px] outline-none placeholder:text-text-secondary"
                   />
                 </label>
@@ -110,7 +112,7 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
                           : "border-line bg-white text-text-primary hover:bg-surface-page"
                       )}
                     >
-                      {s}
+                      {s === "All" ? t("all") : s}
                     </button>
                   ))}
                 </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { Avatar } from "@/components/chat/avatar";
 import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
@@ -29,6 +30,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
   const [showDone, setShowDone] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
   const yuki = characters.yuki;
+  const { t } = useLocale();
   const free = plan === "free" || accountFree;
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                 href="/lesson"
                 className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Continue
+                {t("continue")}
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
             )}
@@ -160,7 +162,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
           {/* Your path */}
           <section aria-labelledby="your-path" className="flex flex-col gap-4">
             <h2 id="your-path" className="font-display text-xl leading-7 font-semibold text-text-primary">
-              Your path
+              {t("yourPath")}
             </h2>
 
             {/* Section 1: Work */}
@@ -171,7 +173,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                   <p className="flex items-center gap-2">
                     <span className="font-display text-[17px] leading-6 font-semibold text-text-primary">Work</span>
                     <span className="rounded-full bg-brand-primary px-2 py-0.5 font-display text-[11px] leading-4 font-semibold tracking-[0.3px] text-white">
-                      CURRENT
+                      {t("current")}
                     </span>
                   </p>
                   <p className="text-[13px] leading-5 text-text-secondary">Yuki Tanaka, your manager</p>
@@ -236,7 +238,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                           onClick={() => setShowDone((v) => !v)}
                           className="rounded-[6px] border border-line bg-white px-2 py-0.5 font-display text-xs font-medium text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          {showDone ? "Hide" : "Show"}
+                          {showDone ? t("hide") : t("show")}
                         </button>
                       </div>
                       {showDone && (
@@ -400,6 +402,7 @@ function LessonRow({
 
 /** Next free lesson. The screen for it is not built yet, so there is no upgrade wall. */
 function UpcomingRow({ title, subtitle, current }: { title: string; subtitle: string; current: boolean }) {
+  const { t } = useLocale();
   return (
     <li className="flex items-center gap-4 px-6 py-3">
       <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
@@ -409,7 +412,7 @@ function UpcomingRow({ title, subtitle, current }: { title: string; subtitle: st
         <span className="block font-display text-[13px] font-medium text-text-primary">{title}</span>
         <span className="block text-[13px] text-text-secondary">{subtitle}</span>
       </span>
-      <span className="font-display text-xs font-semibold text-text-secondary">{current ? "Up next" : "Later"}</span>
+      <span className="font-display text-xs font-semibold text-text-secondary">{current ? t("upNext") : t("later")}</span>
     </li>
   );
 }
@@ -426,6 +429,7 @@ function CompactRow({
   review?: boolean;
   onUpgrade: () => void;
 }) {
+  const { t } = useLocale();
   return (
     <li className="flex items-center gap-4 px-6 py-3">
       <span
@@ -446,7 +450,7 @@ function CompactRow({
         aria-label={`${title}, locked. Upgrade to unlock`}
         className="rounded-full border border-brand-secondary-text bg-white px-2.5 py-0.5 font-display text-[13px] font-semibold text-brand-secondary-text outline-none hover:bg-error-tint focus-visible:ring-2 focus-visible:ring-ring"
       >
-        Upgrade
+        {t("upgrade")}
       </button>
     </li>
   );

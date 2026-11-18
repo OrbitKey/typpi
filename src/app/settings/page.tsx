@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { loadProfile, profileInitial } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 
@@ -33,6 +34,7 @@ export default function ProfileSettings() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { t } = useLocale();
   const dirty = name.trim() !== savedName;
 
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function ProfileSettings() {
   };
 
   return (
-    <SettingsPage title="Profile" width={560}>
+    <SettingsPage title={t("profile")} width={560}>
       <div className="flex items-center gap-5">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="size-20 shrink-0 rounded-full object-cover" />
@@ -148,18 +150,18 @@ export default function ProfileSettings() {
             disabled={uploading || !userId}
             onClick={() => fileRef.current?.click()}
           >
-            {uploading ? "Uploading…" : "Change photo"}
+            {uploading ? t("uploading") : t("changePhoto")}
           </Button>
           <p className="pt-1.5 text-xs text-text-secondary">JPG, GIF or PNG. 1MB max.</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="name" className="font-normal">Name</Label>
+        <Label htmlFor="name" className="font-normal">{t("name")}</Label>
         <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email" className="font-normal">Email</Label>
+        <Label htmlFor="email" className="font-normal">{t("email")}</Label>
         <Input id="email" type="email" autoComplete="email" value={email} readOnly />
       </div>
 
@@ -169,7 +171,7 @@ export default function ProfileSettings() {
           onClick={save}
           className="h-11 rounded-[10px] px-5 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100"
         >
-          {saving ? "Saving…" : "Save changes"}
+          {saving ? t("saving") : t("saveChanges")}
         </Button>
         {error && (
           <p role="alert" className="pt-2 text-sm text-error">
@@ -180,13 +182,13 @@ export default function ProfileSettings() {
 
       <div className="mt-4 flex items-center justify-between gap-4 border-t border-line pt-6">
         <div>
-          <h2 className="font-display text-sm text-text-primary">Delete account</h2>
+          <h2 className="font-display text-sm text-text-primary">{t("deleteAccount")}</h2>
           <p className="text-xs text-text-secondary">Permanently remove your account and all associated data.</p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="ghost" className="text-error hover:bg-error-tint hover:text-error">
-              Delete account
+              {t("deleteAccount")}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -198,10 +200,10 @@ export default function ProfileSettings() {
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t("cancel")}</Button>
               </DialogClose>
               <Button variant="destructive" onClick={removeAccount} disabled={deleting}>
-                {deleting ? "Deleting…" : "Delete account"}
+                {deleting ? "…" : t("deleteAccount")}
               </Button>
             </DialogFooter>
           </DialogContent>

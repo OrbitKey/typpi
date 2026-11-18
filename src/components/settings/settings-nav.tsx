@@ -5,15 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { loadProfile, planLabel, profileInitial } from "@/lib/profile";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { type MessageKey } from "@/lib/i18n";
+import { loadProfile, profileInitial } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/settings", label: "Profile", icon: User },
-  { href: "/settings/subscription", label: "Subscription", icon: CreditCard },
-  { href: "/settings/language", label: "Language & learning", icon: Globe },
-  { href: "/settings/features", label: "Suggest a feature", icon: Lightbulb },
+const links: { href: string; label: MessageKey; icon: typeof User }[] = [
+  { href: "/settings", label: "profile", icon: User },
+  { href: "/settings/subscription", label: "subscription", icon: CreditCard },
+  { href: "/settings/language", label: "languageLearning", icon: Globe },
+  { href: "/settings/features", label: "suggestFeature", icon: Lightbulb },
 ];
 
 /** Settings side panel (D-SET-01…06). Name, email and plan come from the profile. */
@@ -22,7 +24,8 @@ export function SettingsNav() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [plan, setPlan] = useState("Free plan");
+  const [plan, setPlan] = useState("free");
+  const { t } = useLocale();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export function SettingsNav() {
       if (cancelled || !result) return;
       setName(result.profile.display_name?.trim() || result.email);
       setEmail(result.email);
-      setPlan(planLabel(result.profile.plan));
+      setPlan(result.profile.plan || "free");
       setAvatarUrl(result.profile.avatar_url);
     });
     return () => {
@@ -59,10 +62,10 @@ export function SettingsNav() {
         <div className="min-w-0 flex-1">
           <p className="flex items-center justify-between gap-2">
             <span className="truncate font-display text-[15px] leading-5 font-semibold text-text-primary">
-              {name || "Your account"}
+              {name || t("yourAccount")}
             </span>
             <span className="shrink-0 rounded-full border border-line bg-surface-page px-2 py-0.5 font-display text-[11px] font-medium text-text-secondary">
-              {plan}
+              {plan === "individual" ? t("individual") : plan === "premium" ? t("premium") : t("freePlan")}
             </span>
           </p>
           <p className="truncate text-xs text-text-secondary">{email}</p>
@@ -85,19 +88,19 @@ export function SettingsNav() {
               )}
             >
               <Icon className="size-4" strokeWidth={1.75} aria-hidden />
-              {label}
+              {t(label)}
             </Link>
           );
         })}
       </nav>
 
       <p className="flex items-center justify-center gap-2 border-t border-slate-200 py-4 text-xs text-text-secondary">
-        <a href="#" className="hover:underline">Terms</a>
+        <a href="#" className="hover:underline">{t("terms")}</a>
         <span aria-hidden>·</span>
-        <a href="#" className="hover:underline">Privacy</a>
+        <a href="#" className="hover:underline">{t("privacy")}</a>
         <span aria-hidden>·</span>
         <button type="button" onClick={logOut} className="hover:underline">
-          Log out
+          {t("logOut")}
         </button>
       </p>
     </aside>

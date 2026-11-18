@@ -95,9 +95,9 @@ export function SettingsNav() {
       </nav>
 
       <p className="flex items-center justify-center gap-2 border-t border-slate-200 py-4 text-xs text-text-secondary">
-        <a href="#" className="hover:underline">{t("terms")}</a>
+        <Link href="/terms" className="hover:underline">{t("terms")}</Link>
         <span aria-hidden>·</span>
-        <a href="#" className="hover:underline">{t("privacy")}</a>
+        <Link href="/privacy" className="hover:underline">{t("privacy")}</Link>
         <span aria-hidden>·</span>
         <button type="button" onClick={logOut} className="hover:underline">
           {t("logOut")}

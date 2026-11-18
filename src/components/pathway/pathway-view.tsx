@@ -10,9 +10,11 @@ import { Avatar } from "@/components/chat/avatar";
 import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
-import { lockedSections, workLessons } from "@/lib/pathway";
+import { isPlayableLesson, lockedSections, workLessons } from "@/lib/pathway";
+import { type PlanId } from "@/lib/plans";
 import { loadProfile } from "@/lib/profile";
 import { loadLessonProgress } from "@/lib/progress";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,7 +23,12 @@ import { cn } from "@/lib/utils";
  */
 export function PathwayView({ plan }: { plan: "free" | "paid" }) {
   const [accountFree, setAccountFree] = useState(true);
+  const [accountPlan, setAccountPlan] = useState<PlanId>("free");
+  const [planChosen, setPlanChosen] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [greeting, setGreeting] = useState("Good afternoon");
+  const [travelNotify, setTravelNotify] = useState(false);
+  const [notifyError, setNotifyError] = useState("");
   const [xp, setXp] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [starsById, setStarsById] = useState<Record<string, number>>({});
@@ -31,14 +38,39 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
   const [plansOpen, setPlansOpen] = useState(false);
   const yuki = characters.yuki;
   const { t } = useLocale();
-  const free = plan === "free" || accountFree;
+  const free = planChosen ? accountFree : plan === "free" || accountFree;
+
+  const savePlan = (id: PlanId) => {
+    setAccountPlan(id);
+    setAccountFree(id === "free");
+    setPlanChosen(true);
+  };
+
+  const notify = async () => {
+    if (travelNotify) return;
+    setNotifyError("");
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ travel_notify: true }).eq("id", user.id);
+    if (error) {
+      setNotifyError("Couldn't save that. Try again in a moment.");
+      return;
+    }
+    setTravelNotify(true);
+  };
 
   useEffect(() => {
+    setGreeting(greetingFor(new Date()));
     let cancelled = false;
-    Promise.all([loadProfile(), loadLessonProgress()]).then(([profile, progress]) => {
+    Promise.all([loadProfile(), loadLessonProgress()]).then(async ([profile, progress]) => {
       if (cancelled) return;
       const savedPlan = profile?.profile.plan;
-      setAccountFree(savedPlan !== "individual" && savedPlan !== "premium");
+      const nextPlan: PlanId = savedPlan === "individual" || savedPlan === "premium" ? savedPlan : "free";
+      setAccountPlan(nextPlan);
+      setAccountFree(nextPlan === "free");
       const label = profile?.profile.display_name?.trim() || profile?.email.split("@")[0] || "";
       setFirstName(label);
       const byId = Object.fromEntries(progress.map((row) => [row.lesson_id, row.stars]));
@@ -50,6 +82,15 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
         doneCount += 1;
       }
       setCompleted(doneCount);
+      if (!profile) return;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("travel_notify")
+        .eq("id", profile.userId)
+        .maybeSingle();
+      if (cancelled || error || !data?.travel_notify) return;
+      setTravelNotify(true);
     });
     return () => {
       cancelled = true;
@@ -102,9 +143,8 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
           {/* Greeting */}
           <div className="flex items-start justify-between">
             <div>
-              {/* SAMPLE DATA: greeting + name */}
               <h1 className="font-display text-[24px] leading-8 font-semibold tracking-[-0.3px] text-text-primary">
-                Good afternoon{firstName ? `, ${firstName}` : ""}
+                {greeting}{firstName ? `, ${firstName}` : ""}
               </h1>
               <p className="pt-0.5 text-sm leading-5 text-text-secondary">
                 Section 1 of 5 <span aria-hidden className="text-slate-300">•</span> Work
@@ -148,7 +188,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                 Unlock all lessons
                 <ArrowRight className="size-4" aria-hidden />
               </button>
-            ) : (
+            ) : isPlayableLesson(next.id) ? (
               <Link
                 href="/lesson"
                 className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -156,6 +196,14 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                 {t("continue")}
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex h-11 cursor-default items-center rounded-[12px] bg-surface-tint px-6 font-display text-[15px] font-medium text-text-secondary"
+              >
+                Coming soon
+              </button>
             )}
           </section>
 
@@ -317,14 +365,19 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
               </span>
               <p className="flex-1 font-display text-[13px] text-text-secondary">
                 <span className="font-semibold text-text-primary">Travel</span> <span aria-hidden>·</span> Coming soon
+                {notifyError ? <span className="text-error"> · {notifyError}</span> : null}
               </p>
-              {/* TODO: waitlist */}
-              <button
-                type="button"
-                className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Notify me
-              </button>
+              {travelNotify ? (
+                <span className="font-display text-[13px] font-semibold text-text-primary">We'll notify you</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={notify}
+                  className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Notify me
+                </button>
+              )}
             </div>
           </section>
         </div>
@@ -334,10 +387,19 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
         open={plansOpen}
         onOpenChange={setPlansOpen}
         onNotNow={() => {}}
+        onPlanSaved={savePlan}
+        currentPlan={accountPlan}
         title="Unlock every lesson"
       />
     </div>
   );
+}
+
+function greetingFor(now: Date) {
+  const hour = now.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function DoneDot() {
@@ -355,7 +417,7 @@ function LessonRow({
   status,
 }: {
   index: number;
-  lesson: { title: string; subtitle: string; stars?: number };
+  lesson: { id?: string; title: string; subtitle: string; stars?: number };
   status: "done" | "current" | "locked";
 }) {
   const body = (
@@ -385,9 +447,10 @@ function LessonRow({
   );
 
   const base = "flex w-full items-center gap-4 rounded-2xl px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const playable = status === "current" && !!lesson.id && isPlayableLesson(lesson.id);
   return (
     <li>
-      {status === "current" ? (
+      {playable ? (
         <Link href="/lesson" className={cn(base, "border border-draft-line bg-surface-tint")}>
           {body}
         </Link>

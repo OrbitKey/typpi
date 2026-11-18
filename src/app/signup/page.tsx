@@ -1,6 +1,7 @@
 "use client";
 
 import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, RotateCw } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 import { useEffect, useRef, useState } from "react";
@@ -104,6 +105,7 @@ export default function SignupPage() {
       language?: string;
       purpose?: string;
       level?: string;
+      travel_notify?: boolean;
     } = {
       daily_goal_minutes: Number(goal),
       reminder_enabled: reminder,
@@ -118,12 +120,18 @@ export default function SignupPage() {
         if (saved.level === "never" || saved.level === "little" || saved.level === "confident") {
           patch.level = saved.level;
         }
+        if (saved.travelNotify === true) patch.travel_notify = true;
       }
     } catch {
       // Onboarding was never stored in this tab.
     }
 
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    let { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    if (error && patch.travel_notify) {
+      const { travel_notify: _travelNotify, ...rest } = patch;
+      const retry = await supabase.from("profiles").update(rest).eq("id", user.id);
+      error = retry.error;
+    }
     setSaving(false);
     if (error) {
       setEmailError(error.message);
@@ -285,8 +293,8 @@ export default function SignupPage() {
               </PrimaryButton>
               <p className="pt-1 text-center text-xs leading-[18px] text-text-secondary">
                 By continuing you agree to the{" "}
-                <a href="#" className="underline underline-offset-2">Terms</a> and{" "}
-                <a href="#" className="underline underline-offset-2">Privacy Policy</a>.
+                <Link href="/terms" className="underline underline-offset-2">Terms</Link> and{" "}
+                <Link href="/privacy" className="underline underline-offset-2">Privacy Policy</Link>.
               </p>
               <p className="text-sm text-text-primary">
                 Already have an account?{" "}

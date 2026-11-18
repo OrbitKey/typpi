@@ -11,6 +11,7 @@ create table if not exists public.profiles (
   reminder_enabled boolean not null default false,
   reminder_time text,
   plan text not null default 'free',
+  travel_notify boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

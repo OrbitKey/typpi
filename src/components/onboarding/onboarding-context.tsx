@@ -14,12 +14,15 @@ type OnboardingState = {
   detectedLanguage: string;
   purpose: PurposeId;
   level: LevelId;
+  /** Wants an email when the Travel track opens. No mail is sent yet. */
+  travelNotify: boolean;
 };
 
 type OnboardingContextValue = OnboardingState & {
   setLanguage: (code: string) => void;
   setPurpose: (id: PurposeId) => void;
   setLevel: (id: LevelId) => void;
+  setTravelNotify: (value: boolean) => void;
 };
 
 const STORAGE_KEY = "typpi.onboarding";
@@ -30,6 +33,7 @@ const defaults: OnboardingState = {
   detectedLanguage: "en",
   purpose: "work",
   level: "never",
+  travelNotify: false,
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
@@ -69,6 +73,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       setLanguage: (language) => setState((s) => ({ ...s, language })),
       setPurpose: (purpose) => setState((s) => ({ ...s, purpose })),
       setLevel: (level) => setState((s) => ({ ...s, level })),
+      setTravelNotify: (travelNotify) => setState((s) => ({ ...s, travelNotify })),
     }),
     [state]
   );

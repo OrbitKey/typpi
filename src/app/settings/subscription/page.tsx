@@ -1,11 +1,13 @@
 "use client";
 
 import { CreditCard, Download, ExternalLink, Lock, ReceiptText } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PlansDialog } from "@/components/plans/plans-dialog";
 import { SettingsPage } from "@/components/settings/settings-nav";
 import { Button } from "@/components/ui/button";
+import { plans, type PlanId } from "@/lib/plans";
+import { loadProfile } from "@/lib/profile";
 
 // SAMPLE DATA (D-SET-02)
 const invoices = ["Nov 9, 2026", "Oct 9, 2026", "Sep 9, 2026"];
@@ -13,20 +15,31 @@ const invoices = ["Nov 9, 2026", "Oct 9, 2026", "Sep 9, 2026"];
 /** D-SET-02 · Subscription */
 export default function SubscriptionSettings() {
   const [plansOpen, setPlansOpen] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<PlanId>("free");
+
+  useEffect(() => {
+    loadProfile().then((result) => {
+      const value = result?.profile.plan;
+      if (value === "individual" || value === "premium") setCurrentPlan(value);
+    });
+  }, []);
+
+  const selected = plans.find((item) => item.id === currentPlan) ?? plans[0];
 
   return (
     <SettingsPage title="Subscription" width={640}>
       <section className="rounded-[20px] border border-line bg-white px-6 py-5 shadow-xs">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2">
-            <span className="font-display text-lg font-semibold text-text-primary">Individual</span>
+            <span className="font-display text-lg font-semibold text-text-primary">{selected.name}</span>
             <span className="rounded-full bg-success-tint px-2 py-0.5 font-display text-xs font-semibold text-success">Active</span>
           </p>
           <p className="font-display">
-            <span className="text-lg font-bold text-text-primary">$7.99</span>
-            <span className="text-sm text-text-secondary">/ month</span>
+            <span className="text-lg font-bold text-text-primary">{selected.price}</span>
+            {selected.period ? <span className="text-sm text-text-secondary">{selected.period}</span> : null}
           </p>
         </div>
+        {currentPlan !== "free" && (
         <dl className="mt-4 flex flex-col gap-3 border-y border-line py-4 text-sm">
           <div className="flex justify-between">
             <dt className="text-text-secondary">Next payment</dt>
@@ -40,18 +53,22 @@ export default function SubscriptionSettings() {
             </dd>
           </div>
         </dl>
+        )}
         <div className="mt-4 flex items-center justify-between">
           <Button variant="outline" className="h-10 rounded-[10px] px-4 font-normal" onClick={() => setPlansOpen(true)}>
             Change plan
           </Button>
-          {/* TODO(backend): Stripe customer portal */}
-          <a href="#" className="flex items-center gap-1.5 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:underline">
-            Manage or cancel
-            <ExternalLink className="size-3.5" aria-hidden />
-          </a>
+          {currentPlan !== "free" && (
+            // TODO(backend): Stripe customer portal
+            <a href="#" className="flex items-center gap-1.5 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:underline">
+              Manage or cancel
+              <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+          )}
         </div>
       </section>
 
+      {currentPlan !== "free" && (
       <section aria-labelledby="invoices" className="flex flex-col gap-3 pt-4">
         <h2 id="invoices" className="font-display text-lg font-semibold text-text-primary">
           Invoices
@@ -75,6 +92,7 @@ export default function SubscriptionSettings() {
           ))}
         </ul>
       </section>
+      )}
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-text-secondary">
         <Lock className="size-3" aria-hidden />
@@ -87,7 +105,8 @@ export default function SubscriptionSettings() {
         onNotNow={() => {}}
         title="Change your plan"
         description="You can switch or cancel any time."
-        currentPlan="individual"
+        currentPlan={currentPlan}
+        onPlanSaved={setCurrentPlan}
       />
     </SettingsPage>
   );

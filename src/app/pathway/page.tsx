@@ -7,7 +7,7 @@ import { PathwayView } from "@/components/pathway/pathway-view";
 
 /**
  * D-PTH-01 · Pathway — and D-PTH-02 with `?plan=free`
- * (shown after "Not now" on the paywall). TODO: read the plan from the user's account.
+ * (shown after "Not now" on the paywall). The account plan is read inside PathwayView.
  */
 export default function PathwayPage() {
   return (

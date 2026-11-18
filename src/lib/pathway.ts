@@ -11,6 +11,11 @@ export type PathLesson = {
   paid?: boolean;
 };
 
+/** Lessons that have a playable chat. The others are titles on the path only. */
+export function isPlayableLesson(id: string) {
+  return id === "running-late";
+}
+
 export const workLessons: PathLesson[] = [
   { id: "running-late", title: "Running late", subtitle: "Apologizing politely" },
   { id: "day-off", title: "Asking for a day off", subtitle: "Negotiating dates & requesting permissions" },

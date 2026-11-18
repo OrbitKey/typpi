@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Avatar } from "@/components/chat/avatar";
@@ -10,13 +11,32 @@ import { useOnboarding } from "@/components/onboarding/onboarding-context";
 import { ChatStack, OnboardingShell } from "@/components/onboarding/onboarding-shell";
 import { characters } from "@/lib/characters";
 import { languages, purposes, type PurposeId } from "@/lib/onboarding";
+import { createClient } from "@/lib/supabase/client";
 
 /** D-ONB-02 · Purpose */
 export default function PurposeStep() {
   const router = useRouter();
-  const { language, purpose, setPurpose } = useOnboarding();
+  const { language, purpose, setPurpose, travelNotify, setTravelNotify } = useOnboarding();
+  const [notifyError, setNotifyError] = useState("");
   const hana = characters.hana;
   const languageName = languages.find((l) => l.code === language)?.native ?? "English";
+
+  const notify = async () => {
+    if (travelNotify) return;
+    setNotifyError("");
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase.from("profiles").update({ travel_notify: true }).eq("id", user.id);
+      if (error) {
+        setNotifyError("Couldn't save that. Try again in a moment.");
+        return;
+      }
+    }
+    setTravelNotify(true);
+  };
 
   return (
     <OnboardingShell
@@ -65,18 +85,29 @@ export default function PurposeStep() {
         ))}
       </ChoiceGroup>
 
-      <p className="flex items-center justify-center gap-1 py-2 pb-6 text-sm leading-[18px] text-muted-ink">
-        Travel – coming soon
-        <span aria-hidden className="px-1">
-          ·
+      <p className="flex flex-col items-center gap-1 py-2 pb-6 text-sm leading-[18px] text-muted-ink">
+        <span className="flex items-center gap-1">
+          Travel – coming soon
+          <span aria-hidden className="px-1">
+            ·
+          </span>
+          {travelNotify ? (
+            <span className="font-medium text-text-primary">We'll notify you</span>
+          ) : (
+            <button
+              type="button"
+              onClick={notify}
+              className="rounded-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Notify me
+            </button>
+          )}
         </span>
-        {/* TODO: hook up "notify me" (waitlist) */}
-        <button
-          type="button"
-          className="rounded-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          Notify me
-        </button>
+        {notifyError ? (
+          <span role="alert" className="text-center text-error">
+            {notifyError}
+          </span>
+        ) : null}
       </p>
     </OnboardingShell>
   );

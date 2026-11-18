@@ -46,14 +46,19 @@ export default function SignupPage() {
   // Returning from the magic link: the callback set the session, then sent us here.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "auth") {
-      setEmailError("That sign-in link didn't work. Send a new one.");
-      setStep("email");
-      return;
-    }
+    const failed = params.get("error") === "auth";
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setStep("goal");
+      if (data.user) {
+        setStep("goal");
+        setEmailError("");
+        if (failed) router.replace("/signup");
+        return;
+      }
+      if (failed) {
+        setEmailError("That sign-in didn't work. Try again.");
+        setStep("start");
+      }
     });
   }, []);
 
@@ -285,12 +290,17 @@ export default function SignupPage() {
         <div className="mt-auto flex flex-col items-center gap-3 pt-10">
           {step === "start" && (
             <>
-              <SocialButton provider="Google" />
-              <SocialButton provider="Facebook" />
+              <SocialButton provider="Google" onError={setEmailError} />
+              <SocialButton provider="Facebook" onError={setEmailError} />
               <PrimaryButton onClick={() => setStep("email")}>
                 <Mail className="size-4" aria-hidden />
                 Continue with email
               </PrimaryButton>
+              {emailError && (
+                <p role="alert" className="text-center text-sm text-error">
+                  {emailError}
+                </p>
+              )}
               <p className="pt-1 text-center text-xs leading-[18px] text-text-secondary">
                 By continuing you agree to the{" "}
                 <Link href="/terms" className="underline underline-offset-2">Terms</Link> and{" "}
@@ -425,15 +435,42 @@ function PrimaryButton({ children, className, ...props }: React.ComponentProps<"
   );
 }
 
-function SocialButton({ provider }: { provider: "Google" | "Facebook" }) {
+function SocialButton({
+  provider,
+  onError,
+}: {
+  provider: "Google" | "Facebook";
+  onError: (message: string) => void;
+}) {
+  const [pending, setPending] = useState(false);
+
+  const signIn = async () => {
+    if (provider === "Facebook") {
+      onError("Facebook sign-in isn't connected yet.");
+      return;
+    }
+    setPending(true);
+    onError("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setPending(false);
+      onError(error.message);
+    }
+  };
+
   return (
     <button
       type="button"
-      // TODO(backend): supabase.auth.signInWithOAuth({ provider })
-      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={signIn}
+      disabled={pending}
+      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
     >
       {provider === "Google" ? <GoogleIcon /> : <FacebookIcon />}
-      Continue with {provider}
+      {pending ? "Opening Google…" : `Continue with ${provider}`}
     </button>
   );
 }

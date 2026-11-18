@@ -5,7 +5,9 @@ import { useEffect } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
-/** Return from a magic link. Email links arrive with ?code=, dashboard links with #access_token=. */
+const exchangedCodes = new Set<string>();
+
+/** Return from a magic link or Google. Email and Google arrive with ?code=. */
 export default function AuthCallbackPage() {
   const router = useRouter();
 
@@ -16,11 +18,20 @@ export default function AuthCallbackPage() {
     const code = query.get("code");
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
+    if (code) {
+      if (exchangedCodes.has(code)) return;
+      exchangedCodes.add(code);
+    }
 
     const finish = async () => {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-        router.replace(error ? "/signup?error=auth" : "/signup");
+        if (!error) {
+          router.replace("/signup");
+          return;
+        }
+        const { data } = await supabase.auth.getUser();
+        router.replace(data.user ? "/signup" : "/signup?error=auth");
         return;
       }
       if (accessToken && refreshToken) {

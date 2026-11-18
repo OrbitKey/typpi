@@ -10,6 +10,7 @@ import { RubyText } from "@/components/lesson/messages";
 import { normalise } from "@/lib/onboarding";
 import { phraseGroups } from "@/lib/phrases";
 import { loadLessonProgress } from "@/lib/progress";
+import { loadSavedPhraseIds } from "@/lib/saved-phrases";
 import { cn } from "@/lib/utils";
 
 /** D-PHR-01 · Phrases and D-PHR-02 · Phrases (Empty) */
@@ -27,10 +28,17 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
       setReady(true);
       return;
     }
-    loadLessonProgress().then((rows) => {
+    Promise.all([loadLessonProgress(), loadSavedPhraseIds()]).then(([rows, savedIds]) => {
       if (cancelled) return;
       const done = new Set(rows.map((row) => row.lesson_id));
-      setGroups(phraseGroups.filter((group) => group.lessonId && done.has(group.lessonId)));
+      const saved = new Set(savedIds);
+      setGroups(
+        phraseGroups.flatMap((group) => {
+          if (group.lessonId && done.has(group.lessonId)) return [group];
+          const phrases = group.phrases.filter((phrase) => saved.has(phrase.id));
+          return phrases.length > 0 ? [{ ...group, phrases }] : [];
+        })
+      );
       setReady(true);
     });
     return () => {

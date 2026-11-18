@@ -16,6 +16,7 @@ export default function PrivacyPage() {
           <li>your daily goal, reminder time and plan</li>
           <li>stars and XP for lessons you finish</li>
           <li>whether you asked to hear when Travel opens</li>
+          <li>phrases you save from a lesson</li>
         </ul>
       </LegalSection>
       <LegalSection title="How it’s used">

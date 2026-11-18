@@ -48,17 +48,26 @@ export default function SignupPage() {
     const params = new URLSearchParams(window.location.search);
     const failed = params.get("error") === "auth";
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setStep("goal");
-        setEmailError("");
-        if (failed) router.replace("/signup");
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        if (failed) {
+          setEmailError("That sign-in didn't work. Try again.");
+          setStep("start");
+        }
         return;
       }
-      if (failed) {
-        setEmailError("That sign-in didn't work. Try again.");
-        setStep("start");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("daily_goal_minutes")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (typeof profile?.daily_goal_minutes === "number") {
+        router.replace("/pathway");
+        return;
       }
+      setStep("goal");
+      setEmailError("");
+      if (failed) router.replace("/signup");
     });
   }, []);
 

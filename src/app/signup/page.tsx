@@ -459,7 +459,10 @@ function SocialButton({
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider === "Google" ? "google" : "facebook",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: provider === "Facebook" ? "public_profile email" : undefined,
+      },
     });
     if (error) {
       setPending(false);

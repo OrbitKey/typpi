@@ -27,11 +27,11 @@ type OnboardingContextValue = OnboardingState & {
 
 const STORAGE_KEY = "typpi.onboarding";
 
-/* Defaults match the selected states shown in the Figma frames. */
+/* Daily life is the default purpose. Travel notify is only a saved flag. */
 const defaults: OnboardingState = {
   language: "en",
   detectedLanguage: "en",
-  purpose: "work",
+  purpose: "daily",
   level: "never",
   travelNotify: false,
 };

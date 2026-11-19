@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Avatar } from "@/components/chat/avatar";
 import { GuideBubble, GuideMessageGroup, UserBubble } from "@/components/chat/bubbles";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { ChoiceGroup, OptionCard } from "@/components/onboarding/choice-cards";
 import { ContinueButton } from "@/components/onboarding/continue-button";
 import { useOnboarding } from "@/components/onboarding/onboarding-context";
@@ -18,6 +19,7 @@ export default function PurposeStep() {
   const router = useRouter();
   const { language, purpose, setPurpose, travelNotify, setTravelNotify } = useOnboarding();
   const [notifyError, setNotifyError] = useState("");
+  const { t } = useLocale();
   const hana = characters.hana;
   const languageName = languages.find((l) => l.code === language)?.native ?? "English";
 
@@ -31,7 +33,7 @@ export default function PurposeStep() {
     if (user) {
       const { error } = await supabase.from("profiles").update({ travel_notify: true }).eq("id", user.id);
       if (error) {
-        setNotifyError("Couldn't save that. Try again in a moment.");
+        setNotifyError(t("onbNotifyError"));
         return;
       }
     }
@@ -41,13 +43,13 @@ export default function PurposeStep() {
   return (
     <OnboardingShell
       progress={2}
-      stepLabel="Step 2 of 3"
+      stepLabel={t("onbStep", { current: "2", total: "3" })}
       cta={<ContinueButton onClick={() => router.push("/onboarding/level")} />}
     >
       <ChatStack className="pb-6">
         <GuideMessageGroup name={hana.name} avatar={hana.avatar} dimmed>
           <GuideBubble size="sm" tail="tl">
-            Which language should I use to guide your lessons?
+            {t("onbWhichLanguage")}
           </GuideBubble>
         </GuideMessageGroup>
 
@@ -58,17 +60,17 @@ export default function PurposeStep() {
         <div className="pt-1">
           <GuideMessageGroup name={hana.name} avatar={hana.avatar}>
             <GuideBubble size="sm" tail="tl">
-              What do you need Japanese for?
+              {t("onbWhatFor")}
             </GuideBubble>
             <GuideBubble size="sm" tail="none">
-              Pick one – you can add the other later.
+              {t("onbPickOne")}
             </GuideBubble>
           </GuideMessageGroup>
         </div>
       </ChatStack>
 
       <ChoiceGroup
-        label="What do you need Japanese for?"
+        label={t("onbWhatFor")}
         value={purpose}
         onValueChange={(v) => setPurpose(v as PurposeId)}
         className="flex flex-col gap-4 pb-4"
@@ -77,8 +79,8 @@ export default function PurposeStep() {
           <OptionCard
             key={p.id}
             value={p.id}
-            title={p.title}
-            description={p.description}
+            title={p.id === "daily" ? t("onbDailyLife") : t("onbAtWork")}
+            description={p.id === "daily" ? t("onbDailyLifeDesc") : t("onbAtWorkDesc")}
             selected={purpose === p.id}
             media={<PurposeMedia id={p.id} />}
           />
@@ -87,19 +89,19 @@ export default function PurposeStep() {
 
       <p className="flex flex-col items-center gap-1 py-2 pb-6 text-sm leading-[18px] text-muted-ink">
         <span className="flex items-center gap-1">
-          Travel – coming soon
+          {t("onbTravelSoon")}
           <span aria-hidden className="px-1">
             ·
           </span>
           {travelNotify ? (
-            <span className="font-medium text-text-primary">We'll notify you</span>
+            <span className="font-medium text-text-primary">{t("onbNotifySaved")}</span>
           ) : (
             <button
               type="button"
               onClick={notify}
               className="rounded-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Notify me
+              {t("onbNotifyMe")}
             </button>
           )}
         </span>

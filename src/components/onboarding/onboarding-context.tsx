@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
+import { isLocale } from "@/lib/i18n";
 import {
   detectLanguage,
   type LevelId,
@@ -40,6 +42,8 @@ const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<OnboardingState>(defaults);
+  const [ready, setReady] = useState(false);
+  const { setLocale } = useLocale();
 
   // Restore after a refresh and detect the browser language (client only).
   useEffect(() => {
@@ -57,15 +61,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       ...saved,
       detectedLanguage: detected,
     }));
+    setReady(true);
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // ignore
     }
-  }, [state]);
+    if (isLocale(state.language)) setLocale(state.language);
+  }, [state, ready, setLocale]);
 
   const value = useMemo<OnboardingContextValue>(
     () => ({

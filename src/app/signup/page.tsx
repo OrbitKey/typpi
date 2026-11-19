@@ -454,15 +454,11 @@ function SocialButton({
   const [pending, setPending] = useState(false);
 
   const signIn = async () => {
-    if (provider === "Facebook") {
-      onError("Facebook sign-in isn't connected yet.");
-      return;
-    }
     setPending(true);
     onError("");
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider: provider === "Google" ? "google" : "facebook",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
@@ -479,7 +475,7 @@ function SocialButton({
       className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
     >
       {provider === "Google" ? <GoogleIcon /> : <FacebookIcon />}
-      {pending ? "Opening Google…" : `Continue with ${provider}`}
+      {pending ? `Opening ${provider}…` : `Continue with ${provider}`}
     </button>
   );
 }

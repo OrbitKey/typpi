@@ -61,7 +61,12 @@ export default function SignupPage() {
         .select("daily_goal_minutes")
         .eq("id", data.user.id)
         .maybeSingle();
-      if (typeof profile?.daily_goal_minutes === "number") {
+      if (!profile) {
+        await supabase.auth.signOut();
+        setStep("start");
+        return;
+      }
+      if (typeof profile.daily_goal_minutes === "number") {
         router.replace("/pathway");
         return;
       }

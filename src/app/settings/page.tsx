@@ -118,7 +118,9 @@ export default function ProfileSettings() {
       setError("Could not delete the account. Try again.");
       return;
     }
-    router.push("/signup");
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/onboarding/language");
     router.refresh();
   };
 

@@ -48,14 +48,28 @@ export function PlansDialog({
       return;
     }
     setSaving(id);
-    const { error: saveError } = await supabase.from("profiles").update({ plan: id }).eq("id", user.id);
-    setSaving(null);
-    if (saveError) {
-      setError("Couldn't save that plan.");
+    const here = new URL(window.location.href);
+    here.searchParams.delete("session_id");
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: id, returnTo: here.pathname + here.search }),
+    });
+    const body = (await response.json().catch(() => null)) as { url?: string; plan?: PlanId; error?: string } | null;
+    if (!response.ok || !body) {
+      setSaving(null);
+      setError(body?.error || "Couldn't open the payment page.");
       return;
     }
-    onPlanSaved?.(id);
-    onOpenChange(false);
+    if (body.url) {
+      window.location.assign(body.url);
+      return;
+    }
+    setSaving(null);
+    if (body.plan) {
+      onPlanSaved?.(body.plan);
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -125,7 +139,7 @@ export function PlansDialog({
                         : "border border-brand-primary bg-white text-text-primary hover:bg-surface-page"
                   )}
                 >
-                  {isCurrent ? "Current plan" : saving === p.id ? "Saving…" : p.cta}
+                  {isCurrent ? "Current plan" : saving === p.id ? (p.id === "free" ? "Saving…" : "Opening…") : p.cta}
                 </button>
               </div>
             );

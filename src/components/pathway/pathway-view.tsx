@@ -11,6 +11,7 @@ import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { isPlayableLesson, lockedSections, workLessons } from "@/lib/pathway";
+import { syncBillingPlan } from "@/lib/billing";
 import { type PlanId } from "@/lib/plans";
 import { loadProfile } from "@/lib/profile";
 import { loadLessonProgress } from "@/lib/progress";
@@ -65,7 +66,10 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
   useEffect(() => {
     setGreeting(greetingFor(new Date()));
     let cancelled = false;
-    Promise.all([loadProfile(), loadLessonProgress()]).then(async ([profile, progress]) => {
+    syncBillingPlan()
+      .catch(() => null)
+      .then(() => Promise.all([loadProfile(), loadLessonProgress()]))
+      .then(async ([profile, progress]) => {
       if (cancelled) return;
       const savedPlan = profile?.profile.plan;
       const nextPlan: PlanId = savedPlan === "individual" || savedPlan === "premium" ? savedPlan : "free";

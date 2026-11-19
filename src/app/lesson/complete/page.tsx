@@ -10,6 +10,7 @@ import { Avatar } from "@/components/chat/avatar";
 import { ChatList } from "@/components/lesson/chat-list";
 import { LessonHeader } from "@/components/lesson/lesson-header";
 import { PlansDialog } from "@/components/plans/plans-dialog";
+import { StripeReturn } from "@/components/plans/stripe-return";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { runningLate as lesson } from "@/lib/lesson";
@@ -292,6 +293,7 @@ export default function LessonCompletePage() {
         </div>
       </main>
 
+      <StripeReturn />
       <PlansDialog open={paywall} onOpenChange={setPaywall} onNotNow={() => router.push("/pathway?plan=free")} />
     </div>
   );

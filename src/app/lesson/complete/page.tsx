@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Avatar } from "@/components/chat/avatar";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { ChatList } from "@/components/lesson/chat-list";
 import { LessonHeader } from "@/components/lesson/lesson-header";
 import { PlansDialog } from "@/components/plans/plans-dialog";
@@ -14,6 +15,9 @@ import { StripeReturn } from "@/components/plans/stripe-return";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { runningLate as lesson } from "@/lib/lesson";
+import { syncBillingPlan } from "@/lib/billing";
+import { loadProfile } from "@/lib/profile";
+import type { PlanId } from "@/lib/plans";
 import { cultureTipPhraseId, loadSavedPhraseIds, setPhraseSaved } from "@/lib/saved-phrases";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -49,6 +53,7 @@ const XP_PER_ANSWER = 5;
 /** D-END-01 (quick check) → D-END-02 (after quiz) → D-PAY-01 (paywall) */
 export default function LessonCompletePage() {
   const router = useRouter();
+  const { t } = useLocale();
   const yuki = characters.yuki;
   const [q, setQ] = useState(0);
   const [selected, setSelected] = useState(0);
@@ -58,11 +63,32 @@ export default function LessonCompletePage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [paywall, setPaywall] = useState(false);
+  const [plan, setPlan] = useState<PlanId | null>(null);
   const [translations, setTranslations] = useState(true);
 
   const current = questions[q];
   const quizXp = score * XP_PER_ANSWER;
   const xp = 60 + (done ? quizXp : 0);
+
+  useEffect(() => {
+    let cancelled = false;
+    syncBillingPlan()
+      .catch(() => null)
+      .then(async (synced) => {
+        if (cancelled) return;
+        if (synced === "individual" || synced === "premium" || synced === "free") {
+          setPlan(synced);
+          return;
+        }
+        const profile = await loadProfile();
+        if (cancelled) return;
+        const saved = profile?.profile.plan;
+        setPlan(saved === "individual" || saved === "premium" ? saved : "free");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +99,13 @@ export default function LessonCompletePage() {
       cancelled = true;
     };
   }, []);
+
+  const paid = plan === "individual" || plan === "premium";
+
+  const continueAfterLesson = () => {
+    if (paid) router.push("/pathway");
+    else if (plan === "free") setPaywall(true);
+  };
 
   const toggleSavedPhrase = async () => {
     const next = !saved;
@@ -274,10 +307,11 @@ export default function LessonCompletePage() {
                 <div className="flex flex-col items-center gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setPaywall(true)}
-                    className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={continueAfterLesson}
+                    disabled={plan === null}
+                    className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
                   >
-                    Next lesson: Asking for a day off
+                    {paid ? t("goToPathway") : "Next lesson: Asking for a day off"}
                     <ArrowRight className="size-4" aria-hidden />
                   </button>
                   <Link
@@ -294,7 +328,12 @@ export default function LessonCompletePage() {
       </main>
 
       <StripeReturn />
-      <PlansDialog open={paywall} onOpenChange={setPaywall} onNotNow={() => router.push("/pathway?plan=free")} />
+      <PlansDialog
+        open={paywall}
+        onOpenChange={setPaywall}
+        onNotNow={() => router.push("/pathway?plan=free")}
+        currentPlan={paid ? plan : "free"}
+      />
     </div>
   );
 }

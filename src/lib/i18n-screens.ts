@@ -107,6 +107,11 @@ const screenEn = {
   planNotNow: "Not now",
   planPayError: "Couldn't open the payment page.",
   planStripe: "Payments are processed securely by Stripe.",
+  secCompleteTitle: "Section complete: {section}",
+  secCompleteBody: "You can now message your manager in Japanese.",
+  secCompleteLessons: "{count} lessons",
+  secCompleteNext: "Next section: {section}",
+  secCompleteBack: "Back to pathway",
 } as const;
 
 export type ScreenKey = keyof typeof screenEn;
@@ -218,6 +223,11 @@ const vi: Record<ScreenKey, string> = {
   planNotNow: "Để sau",
   planPayError: "Không mở được trang thanh toán.",
   planStripe: "Thanh toán được Stripe xử lý an toàn.",
+  secCompleteTitle: "Xong phần: {section}",
+  secCompleteBody: "Giờ bạn có thể nhắn cho quản lý bằng tiếng Nhật.",
+  secCompleteLessons: "{count} bài",
+  secCompleteNext: "Phần tiếp: {section}",
+  secCompleteBack: "Về lộ trình",
 };
 
 const id: Record<ScreenKey, string> = {
@@ -327,6 +337,11 @@ const id: Record<ScreenKey, string> = {
   planNotNow: "Nanti saja",
   planPayError: "Tidak dapat membuka halaman pembayaran.",
   planStripe: "Pembayaran diproses dengan aman oleh Stripe.",
+  secCompleteTitle: "Bagian selesai: {section}",
+  secCompleteBody: "Sekarang kamu bisa mengirim pesan ke manajer dalam bahasa Jepang.",
+  secCompleteLessons: "{count} pelajaran",
+  secCompleteNext: "Bagian berikutnya: {section}",
+  secCompleteBack: "Kembali ke jalur",
 };
 
 const ne: Record<ScreenKey, string> = {
@@ -436,6 +451,11 @@ const ne: Record<ScreenKey, string> = {
   planNotNow: "अहिले होइन",
   planPayError: "भुक्तानी पृष्ठ खोलिएन।",
   planStripe: "भुक्तानी Stripe ले सुरक्षित रूपमा गर्छ।",
+  secCompleteTitle: "खण्ड सकियो: {section}",
+  secCompleteBody: "अब तपाईं व्यवस्थापकलाई जापानीमा सन्देश पठाउन सक्नुहुन्छ।",
+  secCompleteLessons: "{count} पाठ",
+  secCompleteNext: "अर्को खण्ड: {section}",
+  secCompleteBack: "मार्गमा फर्कनुहोस्",
 };
 
 const my: Record<ScreenKey, string> = {
@@ -545,6 +565,11 @@ const my: Record<ScreenKey, string> = {
   planNotNow: "ယခု မလုပ်သေး",
   planPayError: "ငွေပေးချေမှု စာမျက်နှာ မဖွင့်နိုင်ပါ။",
   planStripe: "ငွေပေးချေမှုကို Stripe က လုံခြုံစွာ ဆောင်ရွက်သည်။",
+  secCompleteTitle: "အပိုင်း ပြီးပါပြီ: {section}",
+  secCompleteBody: "ယခု မန်နေဂျာကို ဂျပန်ဘာသာဖြင့် စာပို့နိုင်ပါပြီ။",
+  secCompleteLessons: "သင်ခန်းစာ {count} ခု",
+  secCompleteNext: "နောက်အပိုင်း: {section}",
+  secCompleteBack: "လမ်းကြောင်းသို့ ပြန်ရန်",
 };
 
 const fil: Record<ScreenKey, string> = {
@@ -654,6 +679,11 @@ const fil: Record<ScreenKey, string> = {
   planNotNow: "Hindi muna",
   planPayError: "Hindi mabuksan ang pahina ng bayad.",
   planStripe: "Ligtas na pinoproseso ng Stripe ang mga bayad.",
+  secCompleteTitle: "Tapos na ang seksyon: {section}",
+  secCompleteBody: "Puwede mo nang i-message ang manager mo sa Japanese.",
+  secCompleteLessons: "{count} aralin",
+  secCompleteNext: "Susunod na seksyon: {section}",
+  secCompleteBack: "Bumalik sa landas",
 };
 
 const bn: Record<ScreenKey, string> = {
@@ -763,6 +793,11 @@ const bn: Record<ScreenKey, string> = {
   planNotNow: "এখন নয়",
   planPayError: "পেমেন্ট পৃষ্ঠা খোলা যায়নি।",
   planStripe: "পেমেন্ট নিরাপদে Stripe প্রক্রিয়া করে।",
+  secCompleteTitle: "অংশ শেষ: {section}",
+  secCompleteBody: "এখন আপনি ম্যানেজারকে জাপানি ভাষায় মেসেজ করতে পারেন।",
+  secCompleteLessons: "{count}টি পাঠ",
+  secCompleteNext: "পরের অংশ: {section}",
+  secCompleteBack: "পথে ফিরুন",
 };
 
 const ur: Record<ScreenKey, string> = {
@@ -872,6 +907,11 @@ const ur: Record<ScreenKey, string> = {
   planNotNow: "ابھی نہیں",
   planPayError: "ادائیگی کا صفحہ نہیں کھلا۔",
   planStripe: "ادائیگی Stripe محفوظ طریقے سے کرتا ہے۔",
+  secCompleteTitle: "حصہ مکمل: {section}",
+  secCompleteBody: "اب آپ مینیجر کو جاپانی میں پیغام بھیج سکتے ہیں۔",
+  secCompleteLessons: "{count} سبق",
+  secCompleteNext: "اگلا حصہ: {section}",
+  secCompleteBack: "راستے پر واپس",
 };
 
 const zh: Record<ScreenKey, string> = {
@@ -981,6 +1021,11 @@ const zh: Record<ScreenKey, string> = {
   planNotNow: "以后再说",
   planPayError: "无法打开付款页面。",
   planStripe: "付款由 Stripe 安全处理。",
+  secCompleteTitle: "部分完成：{section}",
+  secCompleteBody: "你现在可以用日语给经理发消息了。",
+  secCompleteLessons: "{count} 课",
+  secCompleteNext: "下一部分：{section}",
+  secCompleteBack: "返回路径",
 };
 
 const ko: Record<ScreenKey, string> = {
@@ -1090,6 +1135,11 @@ const ko: Record<ScreenKey, string> = {
   planNotNow: "나중에",
   planPayError: "결제 페이지를 열 수 없어요.",
   planStripe: "결제는 Stripe가 안전하게 처리합니다.",
+  secCompleteTitle: "부분 완료: {section}",
+  secCompleteBody: "이제 일본어로 매니저에게 메시지를 보낼 수 있어요.",
+  secCompleteLessons: "수업 {count}개",
+  secCompleteNext: "다음 부분: {section}",
+  secCompleteBack: "경로로 돌아가기",
 };
 
 const pt: Record<ScreenKey, string> = {
@@ -1199,6 +1249,11 @@ const pt: Record<ScreenKey, string> = {
   planNotNow: "Agora não",
   planPayError: "Não foi possível abrir a página de pagamento.",
   planStripe: "Os pagamentos são processados com segurança pela Stripe.",
+  secCompleteTitle: "Seção concluída: {section}",
+  secCompleteBody: "Agora você pode mandar mensagem ao seu gerente em japonês.",
+  secCompleteLessons: "{count} lições",
+  secCompleteNext: "Próxima seção: {section}",
+  secCompleteBack: "Voltar ao percurso",
 };
 
 const es: Record<ScreenKey, string> = {
@@ -1308,6 +1363,11 @@ const es: Record<ScreenKey, string> = {
   planNotNow: "Ahora no",
   planPayError: "No se pudo abrir la página de pago.",
   planStripe: "Los pagos los procesa Stripe de forma segura.",
+  secCompleteTitle: "Sección completa: {section}",
+  secCompleteBody: "Ya puedes escribirle a tu jefe en japonés.",
+  secCompleteLessons: "{count} lecciones",
+  secCompleteNext: "Siguiente sección: {section}",
+  secCompleteBack: "Volver a la ruta",
 };
 
 const ru: Record<ScreenKey, string> = {
@@ -1417,6 +1477,11 @@ const ru: Record<ScreenKey, string> = {
   planNotNow: "Не сейчас",
   planPayError: "Не удалось открыть страницу оплаты.",
   planStripe: "Платежи безопасно проводит Stripe.",
+  secCompleteTitle: "Раздел пройден: {section}",
+  secCompleteBody: "Теперь вы можете написать руководителю по-японски.",
+  secCompleteLessons: "{count} уроков",
+  secCompleteNext: "Следующий раздел: {section}",
+  secCompleteBack: "Назад к пути",
 };
 
 const si: Record<ScreenKey, string> = {
@@ -1526,6 +1591,11 @@ const si: Record<ScreenKey, string> = {
   planNotNow: "දැන් නොවේ",
   planPayError: "ගෙවීම් පිටුව විවෘත කළ නොහැක.",
   planStripe: "ගෙවීම් Stripe ආරක්ෂිතව කරයි.",
+  secCompleteTitle: "කොටස අවසන්: {section}",
+  secCompleteBody: "දැන් ඔබට කළමනාකරුට ජපන් භාෂාවෙන් පණිවිඩයක් යැවිය හැක.",
+  secCompleteLessons: "පාඩම් {count}",
+  secCompleteNext: "ඊළඟ කොටස: {section}",
+  secCompleteBack: "මාර්ගයට ආපසු",
 };
 
 const mn: Record<ScreenKey, string> = {
@@ -1635,6 +1705,11 @@ const mn: Record<ScreenKey, string> = {
   planNotNow: "Одоо биш",
   planPayError: "Төлбөрийн хуудсыг нээж чадсангүй.",
   planStripe: "Төлбөрийг Stripe аюулгүй боловсруулна.",
+  secCompleteTitle: "Хэсэг дууслаа: {section}",
+  secCompleteBody: "Одоо менежертээ япон хэлээр зурвас бичиж болно.",
+  secCompleteLessons: "{count} хичээл",
+  secCompleteNext: "Дараагийн хэсэг: {section}",
+  secCompleteBack: "Зам руу буцах",
 };
 
 export const screenMessages: Record<Locale, Record<ScreenKey, string>> = {

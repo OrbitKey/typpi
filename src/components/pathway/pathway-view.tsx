@@ -57,7 +57,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
     if (!user) return;
     const { error } = await supabase.from("profiles").update({ travel_notify: true }).eq("id", user.id);
     if (error) {
-      setNotifyError("Couldn't save that. Try again in a moment.");
+      setNotifyError(t("onbNotifyError"));
       return;
     }
     setTravelNotify(true);
@@ -368,18 +368,18 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                 <Compass className="size-4" aria-hidden />
               </span>
               <p className="flex-1 font-display text-[13px] text-text-secondary">
-                <span className="font-semibold text-text-primary">Travel</span> <span aria-hidden>·</span> Coming soon
+                <span className="font-semibold text-text-primary">{t("onbTravelSoon")}</span>
                 {notifyError ? <span className="text-error"> · {notifyError}</span> : null}
               </p>
               {travelNotify ? (
-                <span className="font-display text-[13px] font-semibold text-text-primary">We'll notify you</span>
+                <span className="font-display text-[13px] font-semibold text-text-primary">{t("onbNotifySaved")}</span>
               ) : (
                 <button
                   type="button"
                   onClick={notify}
                   className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  Notify me
+                  {t("onbNotifyMe")}
                 </button>
               )}
             </div>

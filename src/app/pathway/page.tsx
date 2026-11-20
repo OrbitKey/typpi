@@ -4,10 +4,11 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 import { PathwayView } from "@/components/pathway/pathway-view";
+import { StripeReturn } from "@/components/plans/stripe-return";
 
 /**
  * D-PTH-01 · Pathway — and D-PTH-02 with `?plan=free`
- * (shown after "Not now" on the paywall). TODO: read the plan from the user's account.
+ * (shown after "Not now" on the paywall). The account plan is read inside PathwayView.
  */
 export default function PathwayPage() {
   return (
@@ -19,5 +20,10 @@ export default function PathwayPage() {
 
 function Pathway() {
   const plan = useSearchParams().get("plan");
-  return <PathwayView plan={plan === "free" ? "free" : "paid"} />;
+  return (
+    <>
+      <StripeReturn />
+      <PathwayView plan={plan === "free" ? "free" : "paid"} />
+    </>
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUp, ChevronDown, Inbox, ListFilter, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { SettingsPage } from "@/components/settings/settings-nav";
 import { Button } from "@/components/ui/button";
@@ -17,19 +17,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { createFeature, loadFeatureBoard, setFeatureVote } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 type Status = "Planned" | "Under review" | "In progress" | "Done";
-type Idea = { id: number; votes: number; title: string; body: string; status?: Status; createdAt: number };
+type Idea = {
+  id: string;
+  title: string;
+  body: string;
+  votes: number;
+  createdAt: number;
+  status?: Status;
+};
 
-// SAMPLE DATA (D-SET-04)
-const seed: Idea[] = [
-  { id: 1, votes: 48, title: "Practice with my phone's real keyboard", body: "Allow connecting mobile Bluetooth keyboard or testing typing accuracy directly using native keyboards.", status: "Planned", createdAt: 1 },
-  { id: 2, votes: 35, title: "Hospital & pharmacy conversations", body: "Scenarios focusing on symptoms, medical triage, asking about side effects, and communicating with pharmacists.", status: "Under review", createdAt: 2 },
-  { id: 3, votes: 22, title: "Dark mode", body: "A full high-contrast dark theme option for evening study sessions to reduce eye strain.", status: "In progress", createdAt: 3 },
-  { id: 4, votes: 19, title: "Nepali interface language", body: "Support UI translations and explanations in Nepali for the rapidly growing community of learners.", status: "Under review", createdAt: 4 },
-  { id: 5, votes: 11, title: "Offline mode for the train", body: "Download upcoming lessons in advance so practice can continue smoothly during subway commutes.", status: "Done", createdAt: 5 },
-];
+const statuses: Status[] = ["Planned", "Under review", "In progress", "Done"];
+
+function asStatus(value: string | null): Status | undefined {
+  return statuses.find((status) => status === value);
+}
 
 const statusStyles: Record<Status, string> = {
   Planned: "bg-sky-50 text-sky-800",
@@ -40,13 +45,46 @@ const statusStyles: Record<Status, string> = {
 
 /** D-SET-04 · Feature board, D-SET-05 · Suggest a feature (modal), D-SET-06 · empty filter */
 export default function FeatureBoard() {
-  const [ideas, setIdeas] = useState(seed);
-  const [voted, setVoted] = useState<Set<number>>(new Set([1, 4])); // SAMPLE DATA
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [voted, setVoted] = useState<Set<string>>(new Set());
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [sort, setSort] = useState<"top" | "new">("top");
   const [status, setStatus] = useState<"all" | Status>("all");
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadFeatureBoard().then((result) => {
+      if (cancelled) return;
+      if ("error" in result) {
+        setLoadError(result.error);
+        setReady(true);
+        return;
+      }
+      setIdeas(
+        result.ideas.map((idea) => {
+          const ideaStatus = asStatus(idea.status);
+          return {
+            id: idea.id,
+            title: idea.title,
+            body: idea.body,
+            votes: idea.votes,
+            createdAt: idea.createdAt,
+            ...(ideaStatus ? { status: ideaStatus } : {}),
+          };
+        })
+      );
+      setVoted(new Set(result.voted));
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const list = useMemo(
     () =>
@@ -56,23 +94,51 @@ export default function FeatureBoard() {
     [ideas, sort, status]
   );
 
-  const toggleVote = (id: number) => {
+  const toggleVote = async (id: string) => {
     const has = voted.has(id);
-    setVoted((v) => {
-      const n = new Set(v);
-      if (has) n.delete(id);
-      else n.add(id);
-      return n;
+    setVoted((current) => {
+      const next = new Set(current);
+      if (has) next.delete(id);
+      else next.add(id);
+      return next;
     });
-    setIdeas((all) => all.map((i) => (i.id === id ? { ...i, votes: i.votes + (has ? -1 : 1) } : i)));
+    setIdeas((all) => all.map((idea) => (idea.id === id ? { ...idea, votes: idea.votes + (has ? -1 : 1) } : idea)));
+    const ok = await setFeatureVote(id, !has);
+    if (ok) return;
+    setVoted((current) => {
+      const next = new Set(current);
+      if (has) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    setIdeas((all) => all.map((idea) => (idea.id === id ? { ...idea, votes: idea.votes + (has ? 1 : -1) } : idea)));
+    setLoadError("Couldn't save that vote.");
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
-    const id = Date.now();
-    setIdeas((all) => [...all, { id, votes: 1, title: title.trim(), body: body.trim(), createdAt: id }]);
-    setVoted((v) => new Set(v).add(id));
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    setLoadError("");
+    const created = await createFeature(title.trim(), body.trim());
+    setSaving(false);
+    if (!created) {
+      setLoadError("Couldn't save that idea.");
+      return;
+    }
+    const createdStatus = asStatus(created.status);
+    setIdeas((all) => [
+      ...all,
+      {
+        id: created.id,
+        title: created.title,
+        body: created.body,
+        votes: created.votes,
+        createdAt: created.createdAt,
+        ...(createdStatus ? { status: createdStatus } : {}),
+      },
+    ]);
+    setVoted((current) => new Set(current).add(created.id));
     setTitle("");
     setBody("");
     setOpen(false);
@@ -118,7 +184,7 @@ export default function FeatureBoard() {
             className="appearance-none bg-transparent pr-5 outline-none"
           >
             <option value="all">All statuses</option>
-            {Object.keys(statusStyles).map((s) => (
+            {statuses.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -126,7 +192,15 @@ export default function FeatureBoard() {
         </label>
       </div>
 
-      {list.length === 0 ? (
+      {loadError ? (
+        <p role="alert" className="text-sm text-error">
+          {loadError}
+        </p>
+      ) : null}
+
+      {!ready ? (
+        <p className="py-16 text-center text-sm text-text-secondary">Loading ideas</p>
+      ) : list.length === 0 ? (
         <div className="flex flex-col items-center gap-1.5 py-16 text-center">
           <Inbox className="size-9 text-icon-default" strokeWidth={1.5} aria-hidden />
           <h2 className="pt-3 font-display text-[15px] font-semibold text-text-primary">Nothing here yet</h2>
@@ -212,7 +286,7 @@ export default function FeatureBoard() {
               </DialogClose>
               <Button
                 type="submit"
-                disabled={!title.trim()}
+                disabled={!title.trim() || saving}
                 className="h-10 rounded-[10px] px-4 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100"
               >
                 Submit

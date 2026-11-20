@@ -3,16 +3,19 @@
 import { ArrowRight, Bookmark, BookmarkCheck, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
 import { Avatar } from "@/components/chat/avatar";
 import { ChatList } from "@/components/lesson/chat-list";
 import { LessonHeader } from "@/components/lesson/lesson-header";
 import { PlansDialog } from "@/components/plans/plans-dialog";
+import { StripeReturn } from "@/components/plans/stripe-return";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
 import { runningLate as lesson } from "@/lib/lesson";
+import { cultureTipPhraseId, loadSavedPhraseIds, setPhraseSaved } from "@/lib/saved-phrases";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Option = { base: string; ruby: string; rest: string; correct: boolean };
@@ -53,12 +56,52 @@ export default function LessonCompletePage() {
   const [done, setDone] = useState(false);
   const [skipped, setSkipped] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [paywall, setPaywall] = useState(false);
   const [translations, setTranslations] = useState(true);
 
   const current = questions[q];
   const quizXp = score * XP_PER_ANSWER;
-  const xp = 400 + (done ? quizXp : 0); // SAMPLE DATA
+  const xp = 60 + (done ? quizXp : 0);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadSavedPhraseIds().then((ids) => {
+      if (!cancelled && ids.includes(cultureTipPhraseId)) setSaved(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleSavedPhrase = async () => {
+    const next = !saved;
+    setSaved(next);
+    setSaveError("");
+    const ok = await setPhraseSaved(cultureTipPhraseId, next);
+    if (!ok) {
+      setSaved(!next);
+      setSaveError("Couldn't save that phrase.");
+    }
+  };
+
+  useEffect(() => {
+    if (!done && !skipped) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      await supabase.from("lesson_progress").upsert(
+        {
+          user_id: user.id,
+          lesson_id: "running-late",
+          stars: 2,
+          xp,
+          completed_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,lesson_id" }
+      );
+    });
+  }, [done, skipped, xp]);
 
   const check = () => {
     const nextScore = score + (current.options[selected].correct ? 1 : 0);
@@ -208,7 +251,7 @@ export default function LessonCompletePage() {
                     <button
                       type="button"
                       aria-pressed={saved}
-                      onClick={() => setSaved((v) => !v)}
+                      onClick={toggleSavedPhrase}
                       className="flex h-[30px] items-center gap-1.5 rounded-[10px] border border-line bg-white px-3 font-display text-xs font-semibold text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {saved ? <BookmarkCheck className="size-3.5" aria-hidden /> : <Bookmark className="size-3.5" aria-hidden />}
@@ -221,6 +264,11 @@ export default function LessonCompletePage() {
                   <p className="pt-1.5 text-sm leading-[23px] text-text-primary">
                     In Japan, message your manager before your shift starts if you&apos;ll be late. Always give an arrival time.
                   </p>
+                  {saveError ? (
+                    <p role="alert" className="pt-2 text-sm text-error">
+                      {saveError}
+                    </p>
+                  ) : null}
                 </section>
 
                 <div className="flex flex-col items-center gap-3 pt-2">
@@ -245,6 +293,7 @@ export default function LessonCompletePage() {
         </div>
       </main>
 
+      <StripeReturn />
       <PlansDialog open={paywall} onOpenChange={setPaywall} onNotNow={() => router.push("/pathway?plan=free")} />
     </div>
   );

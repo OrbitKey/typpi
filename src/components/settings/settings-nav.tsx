@@ -2,37 +2,73 @@
 
 import { CreditCard, Globe, Lightbulb, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
+import { type MessageKey } from "@/lib/i18n";
+import { loadProfile, profileInitial } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/settings", label: "Profile", icon: User },
-  { href: "/settings/subscription", label: "Subscription", icon: CreditCard },
-  { href: "/settings/language", label: "Language & learning", icon: Globe },
-  { href: "/settings/features", label: "Suggest a feature", icon: Lightbulb },
+const links: { href: string; label: MessageKey; icon: typeof User }[] = [
+  { href: "/settings", label: "profile", icon: User },
+  { href: "/settings/subscription", label: "subscription", icon: CreditCard },
+  { href: "/settings/language", label: "languageLearning", icon: Globe },
+  { href: "/settings/features", label: "suggestFeature", icon: Lightbulb },
 ];
 
-/** Settings side panel (D-SET-01…06). SAMPLE DATA: Alex Lee. */
+/** Settings side panel (D-SET-01…06). Name, email and plan come from the profile. */
 export function SettingsNav() {
   const pathname = usePathname();
-  // Figma shows "Individual" on the Subscription page and "Free plan" elsewhere (sample data).
-  const plan = pathname === "/settings/subscription" ? "Individual" : "Free plan";
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState("free");
+  const { t } = useLocale();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadProfile().then((result) => {
+      if (cancelled || !result) return;
+      setName(result.profile.display_name?.trim() || result.email);
+      setEmail(result.email);
+      setPlan(result.profile.plan || "free");
+      setAvatarUrl(result.profile.avatar_url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const logOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/signup");
+    router.refresh();
+  };
 
   return (
     <aside className="sticky top-0 flex h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-display text-sm font-semibold text-white">
-          A
-        </span>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-10 shrink-0 rounded-full object-cover" />
+        ) : (
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-display text-sm font-semibold text-white">
+            {profileInitial(name, email)}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="flex items-center justify-between gap-2">
-            <span className="truncate font-display text-[15px] leading-5 font-semibold text-text-primary">Alex Lee</span>
+            <span className="truncate font-display text-[15px] leading-5 font-semibold text-text-primary">
+              {name || t("yourAccount")}
+            </span>
             <span className="shrink-0 rounded-full border border-line bg-surface-page px-2 py-0.5 font-display text-[11px] font-medium text-text-secondary">
-              {plan}
+              {plan === "individual" ? t("individual") : plan === "premium" ? t("premium") : t("freePlan")}
             </span>
           </p>
-          <p className="truncate text-xs text-text-secondary">alex.lee@example.com</p>
+          <p className="truncate text-xs text-text-secondary">{email}</p>
         </div>
       </div>
 
@@ -52,19 +88,20 @@ export function SettingsNav() {
               )}
             >
               <Icon className="size-4" strokeWidth={1.75} aria-hidden />
-              {label}
+              {t(label)}
             </Link>
           );
         })}
       </nav>
 
       <p className="flex items-center justify-center gap-2 border-t border-slate-200 py-4 text-xs text-text-secondary">
-        <a href="#" className="hover:underline">Terms</a>
+        <Link href="/terms" className="hover:underline">{t("terms")}</Link>
         <span aria-hidden>·</span>
-        <a href="#" className="hover:underline">Privacy</a>
+        <Link href="/privacy" className="hover:underline">{t("privacy")}</Link>
         <span aria-hidden>·</span>
-        {/* TODO(backend): supabase.auth.signOut() */}
-        <button type="button" className="hover:underline">Log out</button>
+        <button type="button" onClick={logOut} className="hover:underline">
+          {t("logOut")}
+        </button>
       </p>
     </aside>
   );

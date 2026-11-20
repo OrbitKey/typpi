@@ -2,14 +2,20 @@
 
 import { ArrowRight, Check, ChevronUp, Clock, Compass, Lock, Play, Sparkles, Trophy, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { Avatar } from "@/components/chat/avatar";
 import { PlansDialog } from "@/components/plans/plans-dialog";
 import { Stars } from "@/components/ui/stars";
 import { characters } from "@/lib/characters";
-import { lockedSections, workLessons } from "@/lib/pathway";
+import { isPlayableLesson, lockedSections, workLessons } from "@/lib/pathway";
+import { syncBillingPlan } from "@/lib/billing";
+import { type PlanId } from "@/lib/plans";
+import { loadProfile } from "@/lib/profile";
+import { loadLessonProgress } from "@/lib/progress";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,17 +23,91 @@ import { cn } from "@/lib/utils";
  * upsell banner, lessons 4–6 + review need a plan ("Upgrade" opens the plans modal).
  */
 export function PathwayView({ plan }: { plan: "free" | "paid" }) {
-  const free = plan === "free";
+  const [accountFree, setAccountFree] = useState(true);
+  const [accountPlan, setAccountPlan] = useState<PlanId>("free");
+  const [planChosen, setPlanChosen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [greeting, setGreeting] = useState("Good afternoon");
+  const [travelNotify, setTravelNotify] = useState(false);
+  const [notifyError, setNotifyError] = useState("");
+  const [xp, setXp] = useState(0);
+  const [completed, setCompleted] = useState(0);
+  const [starsById, setStarsById] = useState<Record<string, number>>({});
   const [banner, setBanner] = useState(true);
   const [workOpen, setWorkOpen] = useState(true);
   const [showDone, setShowDone] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
   const yuki = characters.yuki;
+  const { t } = useLocale();
+  const free = planChosen ? accountFree : plan === "free" || accountFree;
 
-  const completed = free ? 3 : 1;
-  const next = workLessons[completed];
-  const nextLocked = free && !!next.paid;
-  const starsEarned = workLessons.slice(0, completed).reduce((s, l) => s + (l.stars ?? 0), 0);
+  const savePlan = (id: PlanId) => {
+    setAccountPlan(id);
+    setAccountFree(id === "free");
+    setPlanChosen(true);
+  };
+
+  const notify = async () => {
+    if (travelNotify) return;
+    setNotifyError("");
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ travel_notify: true }).eq("id", user.id);
+    if (error) {
+      setNotifyError("Couldn't save that. Try again in a moment.");
+      return;
+    }
+    setTravelNotify(true);
+  };
+
+  useEffect(() => {
+    setGreeting(greetingFor(new Date()));
+    let cancelled = false;
+    syncBillingPlan()
+      .catch(() => null)
+      .then(() => Promise.all([loadProfile(), loadLessonProgress()]))
+      .then(async ([profile, progress]) => {
+      if (cancelled) return;
+      const savedPlan = profile?.profile.plan;
+      const nextPlan: PlanId = savedPlan === "individual" || savedPlan === "premium" ? savedPlan : "free";
+      setAccountPlan(nextPlan);
+      setAccountFree(nextPlan === "free");
+      const label = profile?.profile.display_name?.trim() || profile?.email.split("@")[0] || "";
+      setFirstName(label);
+      const byId = Object.fromEntries(progress.map((row) => [row.lesson_id, row.stars]));
+      setStarsById(byId);
+      setXp(progress.reduce((sum, row) => sum + row.xp, 0));
+      let doneCount = 0;
+      for (const lesson of workLessons) {
+        if (!byId[lesson.id] && byId[lesson.id] !== 0) break;
+        doneCount += 1;
+      }
+      setCompleted(doneCount);
+      if (!profile) return;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("travel_notify")
+        .eq("id", profile.userId)
+        .maybeSingle();
+      if (cancelled || error || !data?.travel_notify) return;
+      setTravelNotify(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const next = workLessons[Math.min(completed, workLessons.length - 1)];
+  const nextLocked = free && !!next.paid && completed < workLessons.length;
+  const doneLessons = workLessons.slice(0, completed).map((lesson) => ({
+    ...lesson,
+    stars: starsById[lesson.id] ?? 0,
+  }));
+  const starsEarned = doneLessons.reduce((sum, lesson) => sum + lesson.stars, 0);
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -67,9 +147,8 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
           {/* Greeting */}
           <div className="flex items-start justify-between">
             <div>
-              {/* SAMPLE DATA: greeting + name */}
               <h1 className="font-display text-[24px] leading-8 font-semibold tracking-[-0.3px] text-text-primary">
-                Good afternoon, Alex
+                {greeting}{firstName ? `, ${firstName}` : ""}
               </h1>
               <p className="pt-0.5 text-sm leading-5 text-text-secondary">
                 Section 1 of 5 <span aria-hidden className="text-slate-300">•</span> Work
@@ -77,7 +156,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
             </div>
             <span className="flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-3.5 py-1.5 font-display text-sm font-semibold text-amber-900">
               <span aria-hidden>⭐</span>
-              415 XP
+              {xp} XP
             </span>
           </div>
 
@@ -113,21 +192,29 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                 Unlock all lessons
                 <ArrowRight className="size-4" aria-hidden />
               </button>
-            ) : (
+            ) : isPlayableLesson(next.id) ? (
               <Link
                 href="/lesson"
                 className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Continue
+                {t("continue")}
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex h-11 cursor-default items-center rounded-[12px] bg-surface-tint px-6 font-display text-[15px] font-medium text-text-secondary"
+              >
+                Coming soon
+              </button>
             )}
           </section>
 
           {/* Your path */}
           <section aria-labelledby="your-path" className="flex flex-col gap-4">
             <h2 id="your-path" className="font-display text-xl leading-7 font-semibold text-text-primary">
-              Your path
+              {t("yourPath")}
             </h2>
 
             {/* Section 1: Work */}
@@ -138,7 +225,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                   <p className="flex items-center gap-2">
                     <span className="font-display text-[17px] leading-6 font-semibold text-text-primary">Work</span>
                     <span className="rounded-full bg-brand-primary px-2 py-0.5 font-display text-[11px] leading-4 font-semibold tracking-[0.3px] text-white">
-                      CURRENT
+                      {t("current")}
                     </span>
                   </p>
                   <p className="text-[13px] leading-5 text-text-secondary">Yuki Tanaka, your manager</p>
@@ -182,15 +269,16 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
               {workOpen &&
                 (free ? (
                   <ol className="divide-y divide-line border-t border-line bg-surface-page/60">
+                    {completed > 0 && (
                     <li>
                       <div className="flex items-center gap-4 px-6 py-3">
                         <DoneDot />
                         <div className="min-w-0 flex-1">
                           <p className="font-display text-[13px] font-semibold text-text-primary">
-                            {completed} lessons completed
+                            {completed} {completed === 1 ? "lesson" : "lessons"} completed
                           </p>
                           <p className="truncate text-[13px] text-text-secondary">
-                            {workLessons.slice(0, completed).map((l) => l.title).join(" · ")}
+                            {doneLessons.map((l) => l.title).join(" · ")}
                           </p>
                         </div>
                         <span className="font-display text-[13px] font-semibold text-brand-secondary-text">
@@ -202,23 +290,28 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                           onClick={() => setShowDone((v) => !v)}
                           className="rounded-[6px] border border-line bg-white px-2 py-0.5 font-display text-xs font-medium text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          {showDone ? "Hide" : "Show"}
+                          {showDone ? t("hide") : t("show")}
                         </button>
                       </div>
                       {showDone && (
                         <ul className="flex flex-col gap-1 px-6 pb-3 pl-[68px]">
-                          {workLessons.slice(0, completed).map((l) => (
+                          {doneLessons.map((l) => (
                             <li key={l.title} className="flex items-center justify-between text-[13px] text-text-secondary">
                               {l.title}
-                              <Stars value={l.stars ?? 0} size={12} />
+                              <Stars value={l.stars} size={12} />
                             </li>
                           ))}
                         </ul>
                       )}
                     </li>
-                    {workLessons.slice(completed).map((l) => (
-                      <CompactRow key={l.title} title={l.title} subtitle={l.subtitle} onUpgrade={() => setPlansOpen(true)} />
-                    ))}
+                    )}
+                    {workLessons.slice(completed).map((l) =>
+                      l.paid ? (
+                        <CompactRow key={l.id} title={l.title} subtitle={l.subtitle} onUpgrade={() => setPlansOpen(true)} />
+                      ) : (
+                        <UpcomingRow key={l.id} title={l.title} subtitle={l.subtitle} current={l.id === next.id} />
+                      )
+                    )}
                     <CompactRow title="Section review" subtitle="Quick test of all 6 lessons" review onUpgrade={() => setPlansOpen(true)} />
                   </ol>
                 ) : (
@@ -227,7 +320,7 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
                       <LessonRow
                         key={l.title}
                         index={i + 1}
-                        lesson={l}
+                        lesson={{ ...l, stars: starsById[l.id] }}
                         status={i < completed ? "done" : i === completed ? "current" : "locked"}
                       />
                     ))}
@@ -276,14 +369,19 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
               </span>
               <p className="flex-1 font-display text-[13px] text-text-secondary">
                 <span className="font-semibold text-text-primary">Travel</span> <span aria-hidden>·</span> Coming soon
+                {notifyError ? <span className="text-error"> · {notifyError}</span> : null}
               </p>
-              {/* TODO: waitlist */}
-              <button
-                type="button"
-                className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Notify me
-              </button>
+              {travelNotify ? (
+                <span className="font-display text-[13px] font-semibold text-text-primary">We'll notify you</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={notify}
+                  className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Notify me
+                </button>
+              )}
             </div>
           </section>
         </div>
@@ -293,10 +391,19 @@ export function PathwayView({ plan }: { plan: "free" | "paid" }) {
         open={plansOpen}
         onOpenChange={setPlansOpen}
         onNotNow={() => {}}
+        onPlanSaved={savePlan}
+        currentPlan={accountPlan}
         title="Unlock every lesson"
       />
     </div>
   );
+}
+
+function greetingFor(now: Date) {
+  const hour = now.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function DoneDot() {
@@ -314,7 +421,7 @@ function LessonRow({
   status,
 }: {
   index: number;
-  lesson: { title: string; subtitle: string; stars?: number };
+  lesson: { id?: string; title: string; subtitle: string; stars?: number };
   status: "done" | "current" | "locked";
 }) {
   const body = (
@@ -344,9 +451,10 @@ function LessonRow({
   );
 
   const base = "flex w-full items-center gap-4 rounded-2xl px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const playable = status === "current" && !!lesson.id && isPlayableLesson(lesson.id);
   return (
     <li>
-      {status === "current" ? (
+      {playable ? (
         <Link href="/lesson" className={cn(base, "border border-draft-line bg-surface-tint")}>
           {body}
         </Link>
@@ -355,6 +463,23 @@ function LessonRow({
           {body}
         </div>
       )}
+    </li>
+  );
+}
+
+/** Next free lesson. The screen for it is not built yet, so there is no upgrade wall. */
+function UpcomingRow({ title, subtitle, current }: { title: string; subtitle: string; current: boolean }) {
+  const { t } = useLocale();
+  return (
+    <li className="flex items-center gap-4 px-6 py-3">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
+        <Play className="size-3 fill-white" aria-hidden />
+      </span>
+      <span className="flex-1">
+        <span className="block font-display text-[13px] font-medium text-text-primary">{title}</span>
+        <span className="block text-[13px] text-text-secondary">{subtitle}</span>
+      </span>
+      <span className="font-display text-xs font-semibold text-text-secondary">{current ? t("upNext") : t("later")}</span>
     </li>
   );
 }
@@ -371,6 +496,7 @@ function CompactRow({
   review?: boolean;
   onUpgrade: () => void;
 }) {
+  const { t } = useLocale();
   return (
     <li className="flex items-center gap-4 px-6 py-3">
       <span
@@ -391,7 +517,7 @@ function CompactRow({
         aria-label={`${title}, locked. Upgrade to unlock`}
         className="rounded-full border border-brand-secondary-text bg-white px-2.5 py-0.5 font-display text-[13px] font-semibold text-brand-secondary-text outline-none hover:bg-error-tint focus-visible:ring-2 focus-visible:ring-ring"
       >
-        Upgrade
+        {t("upgrade")}
       </button>
     </li>
   );

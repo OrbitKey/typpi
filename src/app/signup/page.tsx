@@ -1,6 +1,7 @@
 "use client";
 
-import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, MailOpen, RotateCw } from "lucide-react";
+import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, RotateCw } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Stars } from "@/components/ui/stars";
 import { Switch } from "@/components/ui/switch";
 import { characters } from "@/lib/characters";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Step = "start" | "email" | "sent" | "goal";
@@ -33,21 +35,128 @@ export default function SignupPage() {
   const [reminder, setReminder] = useState(false);
   const [time, setTime] = useState("19:00");
   const [resent, setResent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (step === "email") emailRef.current?.focus();
   }, [step]);
 
-  const submitEmail = (e: React.FormEvent) => {
+  // Returning from the magic link: the callback set the session, then sent us here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const failed = params.get("error") === "auth";
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        if (failed) {
+          setEmailError("That sign-in didn't work. Try again.");
+          setStep("start");
+        }
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("daily_goal_minutes")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (!profile) {
+        await supabase.auth.signOut();
+        setStep("start");
+        return;
+      }
+      if (typeof profile.daily_goal_minutes === "number") {
+        router.replace("/pathway");
+        return;
+      }
+      setStep("goal");
+      setEmailError("");
+      if (failed) router.replace("/signup");
+    });
+  }, []);
+
+  const sendLink = async () => {
+    setSending(true);
+    setEmailError("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setSending(false);
+    if (error) {
+      setEmailError(error.message);
+      return false;
+    }
+    return true;
+  };
+
+  const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError("Enter a valid email address, like you@email.com");
       return;
     }
+    if (await sendLink()) setStep("sent");
+  };
+
+  const resendLink = async () => {
+    if (await sendLink()) setResent(true);
+  };
+
+  const saveGoal = async () => {
+    setSaving(true);
     setEmailError("");
-    // TODO(backend): supabase.auth.signInWithOtp({ email })
-    setStep("sent");
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      setEmailError("Sign in again to save your goal.");
+      setStep("email");
+      return;
+    }
+
+    const patch: {
+      daily_goal_minutes: number;
+      reminder_enabled: boolean;
+      reminder_time: string;
+      language?: string;
+      purpose?: string;
+      level?: string;
+      travel_notify?: boolean;
+    } = {
+      daily_goal_minutes: Number(goal),
+      reminder_enabled: reminder,
+      reminder_time: time,
+    };
+
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("typpi.onboarding") ?? "null");
+      if (saved && typeof saved === "object") {
+        if (typeof saved.language === "string") patch.language = saved.language;
+        if (saved.purpose === "work" || saved.purpose === "daily") patch.purpose = saved.purpose;
+        if (saved.level === "never" || saved.level === "little" || saved.level === "confident") {
+          patch.level = saved.level;
+        }
+        if (saved.travelNotify === true) patch.travel_notify = true;
+      }
+    } catch {
+      // Onboarding was never stored in this tab.
+    }
+
+    let { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    if (error && patch.travel_notify) {
+      const { travel_notify: _travelNotify, ...rest } = patch;
+      const retry = await supabase.from("profiles").update(rest).eq("id", user.id);
+      error = retry.error;
+    }
+    setSaving(false);
+    if (error) {
+      setEmailError(error.message);
+      return;
+    }
+    router.push("/pathway");
   };
 
   return (
@@ -195,16 +304,21 @@ export default function SignupPage() {
         <div className="mt-auto flex flex-col items-center gap-3 pt-10">
           {step === "start" && (
             <>
-              <SocialButton provider="Google" />
-              <SocialButton provider="Facebook" />
+              <SocialButton provider="Google" onError={setEmailError} />
+              <SocialButton provider="Facebook" onError={setEmailError} />
               <PrimaryButton onClick={() => setStep("email")}>
                 <Mail className="size-4" aria-hidden />
                 Continue with email
               </PrimaryButton>
+              {emailError && (
+                <p role="alert" className="text-center text-sm text-error">
+                  {emailError}
+                </p>
+              )}
               <p className="pt-1 text-center text-xs leading-[18px] text-text-secondary">
                 By continuing you agree to the{" "}
-                <a href="#" className="underline underline-offset-2">Terms</a> and{" "}
-                <a href="#" className="underline underline-offset-2">Privacy Policy</a>.
+                <Link href="/terms" className="underline underline-offset-2">Terms</Link> and{" "}
+                <Link href="/privacy" className="underline underline-offset-2">Privacy Policy</Link>.
               </p>
               <p className="text-sm text-text-primary">
                 Already have an account?{" "}
@@ -235,8 +349,8 @@ export default function SignupPage() {
                   {emailError}
                 </p>
               )}
-              <PrimaryButton type="submit" className="font-bold">
-                Send me a link
+              <PrimaryButton type="submit" className="font-bold" disabled={sending}>
+                {sending ? "Sending…" : "Send me a link"}
                 <ArrowRight className="size-4" aria-hidden />
               </PrimaryButton>
               <button
@@ -252,23 +366,20 @@ export default function SignupPage() {
 
           {step === "sent" && (
             <>
-              {/* Simulates opening the magic link (no backend yet) */}
               <button
                 type="button"
-                onClick={() => setStep("goal")}
-                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] border border-slate-300 bg-white font-display text-[15px] font-medium text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <MailOpen className="size-4" aria-hidden />
-                Open email app
-              </button>
-              <button
-                type="button"
-                onClick={() => setResent(true)}
-                className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={resendLink}
+                disabled={sending}
+                className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <RotateCw className="size-3.5" aria-hidden />
                 {resent ? "Link sent again" : "Resend link"}
               </button>
+              {emailError && (
+                <p role="alert" className="text-sm text-error">
+                  {emailError}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => setStep("email")}
@@ -280,10 +391,17 @@ export default function SignupPage() {
           )}
 
           {step === "goal" && (
-            <PrimaryButton onClick={() => router.push("/pathway")}>
-              Start next lesson
-              <ArrowRight className="size-4" aria-hidden />
-            </PrimaryButton>
+            <>
+              <PrimaryButton onClick={saveGoal} disabled={saving}>
+                {saving ? "Saving…" : "Start next lesson"}
+                <ArrowRight className="size-4" aria-hidden />
+              </PrimaryButton>
+              {emailError && (
+                <p role="alert" className="text-sm text-error">
+                  {emailError}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -331,15 +449,41 @@ function PrimaryButton({ children, className, ...props }: React.ComponentProps<"
   );
 }
 
-function SocialButton({ provider }: { provider: "Google" | "Facebook" }) {
+function SocialButton({
+  provider,
+  onError,
+}: {
+  provider: "Google" | "Facebook";
+  onError: (message: string) => void;
+}) {
+  const [pending, setPending] = useState(false);
+
+  const signIn = async () => {
+    setPending(true);
+    onError("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: provider === "Google" ? "google" : "facebook",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: provider === "Facebook" ? "public_profile email" : undefined,
+      },
+    });
+    if (error) {
+      setPending(false);
+      onError(error.message);
+    }
+  };
+
   return (
     <button
       type="button"
-      // TODO(backend): supabase.auth.signInWithOAuth({ provider })
-      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={signIn}
+      disabled={pending}
+      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
     >
       {provider === "Google" ? <GoogleIcon /> : <FacebookIcon />}
-      Continue with {provider}
+      {pending ? `Opening ${provider}…` : `Continue with ${provider}`}
     </button>
   );
 }

@@ -4,21 +4,26 @@ import type { CharacterId } from "@/lib/characters";
 export type LessonStatus = "done" | "current" | "locked" | "upgrade";
 
 export type PathLesson = {
+  id: string;
   title: string;
   subtitle: string;
-  stars?: number;
   /** Lessons 4–6 need a paid plan */
   paid?: boolean;
 };
 
+/** Lessons that have a playable chat. The others are titles on the path only. */
+export function isPlayableLesson(id: string) {
+  return id === "running-late";
+}
+
 export const workLessons: PathLesson[] = [
-  { title: "Running late", subtitle: "Apologizing politely", stars: 2 },
-  { title: "Asking for a day off", subtitle: "Negotiating dates & requesting permissions", stars: 3 },
+  { id: "running-late", title: "Running late", subtitle: "Apologizing politely" },
+  { id: "day-off", title: "Asking for a day off", subtitle: "Negotiating dates & requesting permissions" },
   // TODO(copy): subtitle for "Changing a shift" isn't in Figma
-  { title: "Changing a shift", subtitle: "Swapping shifts with a coworker", stars: 2 },
-  { title: "Calling in sick", subtitle: "Formal notification to manager", paid: true },
-  { title: "Asking a question", subtitle: "Clarifying task instructions", paid: true },
-  { title: "Thanking your manager", subtitle: "Appreciation & closing conversations", paid: true },
+  { id: "changing-shift", title: "Changing a shift", subtitle: "Swapping shifts with a coworker" },
+  { id: "calling-in-sick", title: "Calling in sick", subtitle: "Formal notification to manager", paid: true },
+  { id: "asking-a-question", title: "Asking a question", subtitle: "Clarifying task instructions", paid: true },
+  { id: "thanking-manager", title: "Thanking your manager", subtitle: "Appreciation & closing conversations", paid: true },
 ];
 
 export const lockedSections: {

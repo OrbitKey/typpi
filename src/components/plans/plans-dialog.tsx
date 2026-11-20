@@ -2,11 +2,13 @@
 
 import { Building2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Avatar } from "@/components/chat/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { characters } from "@/lib/characters";
 import { plans, type PlanId } from "@/lib/plans";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,6 +22,7 @@ export function PlansDialog({
   title = "You've finished 3 lessons – great start!",
   description = "Unlock every section and keep practising real messages.",
   currentPlan = "free",
+  onPlanSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,8 +30,47 @@ export function PlansDialog({
   title?: string;
   description?: string;
   currentPlan?: PlanId;
+  onPlanSaved?: (plan: PlanId) => void;
 }) {
   const router = useRouter();
+  const [saving, setSaving] = useState<PlanId | null>(null);
+  const [error, setError] = useState("");
+
+  const choose = async (id: PlanId) => {
+    if (id === currentPlan || saving) return;
+    setError("");
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      router.push(`/signup?plan=${id}`);
+      return;
+    }
+    setSaving(id);
+    const here = new URL(window.location.href);
+    here.searchParams.delete("session_id");
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: id, returnTo: here.pathname + here.search }),
+    });
+    const body = (await response.json().catch(() => null)) as { url?: string; plan?: PlanId; error?: string } | null;
+    if (!response.ok || !body) {
+      setSaving(null);
+      setError(body?.error || "Couldn't open the payment page.");
+      return;
+    }
+    if (body.url) {
+      window.location.assign(body.url);
+      return;
+    }
+    setSaving(null);
+    if (body.plan) {
+      onPlanSaved?.(body.plan);
+      onOpenChange(false);
+    }
+  };
 
   return (
     <Dialog
@@ -86,8 +128,8 @@ export function PlansDialog({
                 </ul>
                 <button
                   type="button"
-                  disabled={isCurrent}
-                  onClick={() => router.push(`/signup?plan=${p.id}`)}
+                  disabled={isCurrent || saving !== null}
+                  onClick={() => choose(p.id)}
                   className={cn(
                     "h-[38px] rounded-[10px] font-display text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     isCurrent
@@ -97,12 +139,18 @@ export function PlansDialog({
                         : "border border-brand-primary bg-white text-text-primary hover:bg-surface-page"
                   )}
                 >
-                  {isCurrent ? "Current plan" : p.cta}
+                  {isCurrent ? "Current plan" : saving === p.id ? (p.id === "free" ? "Saving…" : "Opening…") : p.cta}
                 </button>
               </div>
             );
           })}
         </div>
+
+        {error ? (
+          <p role="alert" className="pt-4 text-center text-sm text-error">
+            {error}
+          </p>
+        ) : null}
 
         <div className="flex flex-col items-center gap-2 pt-7 text-center">
           <p className="text-sm leading-5 text-text-secondary">Pay by card, Apple Pay or Google Pay</p>

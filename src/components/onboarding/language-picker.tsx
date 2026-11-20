@@ -3,6 +3,7 @@
 import { Check, Search } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
 import { filterLanguages, languages, type Language } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ export function LanguagePicker({
   compact?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const { t } = useLocale();
   const listRef = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ top: false, bottom: false });
   const listId = useId();
@@ -105,13 +107,13 @@ export function LanguagePicker({
     <div className={cn("relative overflow-hidden rounded-2xl border border-line bg-white shadow-xs", !compact && "h-[302px]")}>
       <label className="flex items-center gap-2.5 border-b border-line px-3 pt-3 pb-[13px]">
         <Search className="size-[15px] text-icon-default" strokeWidth={2.25} aria-hidden />
-        <span className="sr-only">Search language</span>
+        <span className="sr-only">{t("searchLanguage")}</span>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onSearchKeyDown}
-          placeholder="Search language"
+          placeholder={t("searchLanguage")}
           aria-controls={listId}
           className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-text-secondary [&::-webkit-search-cancel-button]:hidden"
         />
@@ -146,7 +148,7 @@ export function LanguagePicker({
 
         {results.length === 0 && (
           <p className="flex h-full items-center justify-center px-6 text-center text-[13px] text-text-secondary">
-            No language matches “{query}”
+            {t("noLanguage", { query })}
           </p>
         )}
       </div>
@@ -191,6 +193,7 @@ function LanguageRow({
   compact?: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useLocale();
   return (
     <div
       id={id}
@@ -211,7 +214,7 @@ function LanguageRow({
             {lang.native}
           </span>
           <span className="rounded-full border border-line bg-white px-[9px] py-[3px] text-xs leading-[16.5px] font-semibold tracking-[0.275px] text-muted-ink uppercase">
-            Detected
+            {t("detected")}
           </span>
         </span>
       ) : (

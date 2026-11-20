@@ -3,8 +3,9 @@ import type { RubyLine } from "@/lib/lesson";
 /* Phrases studied so far (D-PHR-01) — sample data from lesson 1 "Running late". */
 export type Phrase = { id: string; ja: RubyLine; en: string; section: string };
 
-export const phraseGroups: { title: string; meta: string; phrases: Phrase[] }[] = [
+export const phraseGroups: { lessonId?: string; title: string; meta: string; phrases: Phrase[] }[] = [
   {
+    lessonId: "running-late",
     title: "Running late",
     meta: "Work · Lesson 1",
     phrases: [

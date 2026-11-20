@@ -2,19 +2,49 @@
 
 import { ArrowRight, Inbox, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppRail } from "@/components/app/app-rail";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { RubyText } from "@/components/lesson/messages";
 import { normalise } from "@/lib/onboarding";
 import { phraseGroups } from "@/lib/phrases";
+import { loadLessonProgress } from "@/lib/progress";
+import { loadSavedPhraseIds } from "@/lib/saved-phrases";
 import { cn } from "@/lib/utils";
 
 /** D-PHR-01 · Phrases and D-PHR-02 · Phrases (Empty) */
 export function PhrasesView({ empty = false }: { empty?: boolean }) {
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
-  const groups = useMemo(() => (empty ? [] : phraseGroups), [empty]);
+  const [groups, setGroups] = useState<typeof phraseGroups>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (empty) {
+      setGroups([]);
+      setReady(true);
+      return;
+    }
+    Promise.all([loadLessonProgress(), loadSavedPhraseIds()]).then(([rows, savedIds]) => {
+      if (cancelled) return;
+      const done = new Set(rows.map((row) => row.lesson_id));
+      const saved = new Set(savedIds);
+      setGroups(
+        phraseGroups.flatMap((group) => {
+          if (group.lessonId && done.has(group.lessonId)) return [group];
+          const phrases = group.phrases.filter((phrase) => saved.has(phrase.id));
+          return phrases.length > 0 ? [{ ...group, phrases }] : [];
+        })
+      );
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [empty]);
   const total = groups.reduce((n, g) => n + g.phrases.length, 0);
   const sections = ["All", ...new Set(groups.flatMap((g) => g.phrases.map((p) => p.section)))];
 
@@ -37,15 +67,17 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 px-8 py-8">
           <header>
-            <h1 className="font-display text-2xl leading-8 font-semibold text-text-primary">Phrases</h1>
+            <h1 className="font-display text-2xl leading-8 font-semibold text-text-primary">{t("phrasesTitle")}</h1>
             <p className="text-sm leading-5 text-text-secondary">
-              {total === 0
-                ? "0 phrases"
-                : `${total} phrases from the lessons you have completed`}
+              {!ready
+                ? "Loading phrases"
+                : total === 0
+                  ? "0 phrases"
+                  : `${total} phrases from the lessons you have completed`}
             </p>
           </header>
 
-          {total === 0 ? (
+          {!ready ? null : total === 0 ? (
             <div className="flex min-h-[560px] flex-col items-center justify-center gap-2 text-center">
               <Inbox className="size-9 text-icon-default" strokeWidth={1.5} aria-hidden />
               <h2 className="pt-3 font-display text-lg font-semibold text-text-primary">No phrases yet</h2>
@@ -56,7 +88,7 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
                 href="/pathway"
                 className="mt-4 flex h-14 items-center gap-1.5 rounded-[14px] bg-brand-primary px-14 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Go to Pathway
+                {t("goToPathway")}
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
             </div>
@@ -65,12 +97,12 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
               <div className="flex flex-col gap-3">
                 <label className="flex h-12 items-center gap-2.5 rounded-[12px] border border-line bg-white px-4 focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/20">
                   <Search className="size-4 text-icon-default" aria-hidden />
-                  <span className="sr-only">Search phrases</span>
+                  <span className="sr-only">{t("searchPhrases")}</span>
                   <input
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search phrases"
+                    placeholder={t("searchPhrases")}
                     className="w-full bg-transparent text-[15px] outline-none placeholder:text-text-secondary"
                   />
                 </label>
@@ -88,7 +120,7 @@ export function PhrasesView({ empty = false }: { empty?: boolean }) {
                           : "border-line bg-white text-text-primary hover:bg-surface-page"
                       )}
                     >
-                      {s}
+                      {s === "All" ? t("all") : s}
                     </button>
                   ))}
                 </div>

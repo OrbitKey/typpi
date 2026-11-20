@@ -12,6 +12,8 @@ import "@fontsource-variable/noto-sans-bengali";
 import "@fontsource-variable/noto-sans-sinhala";
 import "@fontsource/noto-sans-myanmar";
 
+import { LocaleProvider } from "@/components/i18n/locale-provider";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +26,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <LocaleProvider>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

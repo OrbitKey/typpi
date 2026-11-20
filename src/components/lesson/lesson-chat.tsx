@@ -20,6 +20,7 @@ import { LessonHeader } from "@/components/lesson/lesson-header";
 import {
   CharacterMessage,
   CultureTip,
+  TypingMessage,
   DraftBubble,
   HintMessage,
   SentBubble,
@@ -205,7 +206,7 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
   // Yuki replies shortly after the message is sent.
   useEffect(() => {
     if (phase !== "sent") return;
-    const t = window.setTimeout(() => setShowReply(true), 900);
+    const t = window.setTimeout(() => setShowReply(true), 1500);
     return () => window.clearTimeout(t);
   }, [phase]);
 
@@ -352,6 +353,8 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                   <HintText hint={h} lesson={lesson} />
                 </HintMessage>
               ))}
+
+            {phase === "sent" && !showReply && <TypingMessage avatar={yuki.avatar} name={yuki.name} />}
 
             {phase === "sent" && showReply && (
               <>

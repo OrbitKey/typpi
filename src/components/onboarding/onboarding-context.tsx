@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
+import { isLocale } from "@/lib/i18n";
 import {
   detectLanguage,
   type LevelId,
@@ -14,28 +16,34 @@ type OnboardingState = {
   detectedLanguage: string;
   purpose: PurposeId;
   level: LevelId;
+  /** Wants an email when the Travel track opens. No mail is sent yet. */
+  travelNotify: boolean;
 };
 
 type OnboardingContextValue = OnboardingState & {
   setLanguage: (code: string) => void;
   setPurpose: (id: PurposeId) => void;
   setLevel: (id: LevelId) => void;
+  setTravelNotify: (value: boolean) => void;
 };
 
 const STORAGE_KEY = "typpi.onboarding";
 
-/* Defaults match the selected states shown in the Figma frames. */
+/* Daily life is the default purpose. Travel notify is only a saved flag. */
 const defaults: OnboardingState = {
   language: "en",
   detectedLanguage: "en",
-  purpose: "work",
+  purpose: "daily",
   level: "never",
+  travelNotify: false,
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<OnboardingState>(defaults);
+  const [ready, setReady] = useState(false);
+  const { setLocale } = useLocale();
 
   // Restore after a refresh and detect the browser language (client only).
   useEffect(() => {
@@ -53,15 +61,18 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       ...saved,
       detectedLanguage: detected,
     }));
+    setReady(true);
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // ignore
     }
-  }, [state]);
+    if (isLocale(state.language)) setLocale(state.language);
+  }, [state, ready, setLocale]);
 
   const value = useMemo<OnboardingContextValue>(
     () => ({
@@ -69,6 +80,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       setLanguage: (language) => setState((s) => ({ ...s, language })),
       setPurpose: (purpose) => setState((s) => ({ ...s, purpose })),
       setLevel: (level) => setState((s) => ({ ...s, level })),
+      setTravelNotify: (travelNotify) => setState((s) => ({ ...s, travelNotify })),
     }),
     [state]
   );

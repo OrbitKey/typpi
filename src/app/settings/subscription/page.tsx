@@ -3,6 +3,7 @@
 import { CreditCard, Download, ExternalLink, Lock, ReceiptText } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
 import { PlansDialog } from "@/components/plans/plans-dialog";
 import { StripeReturn } from "@/components/plans/stripe-return";
 import { SettingsPage } from "@/components/settings/settings-nav";
@@ -13,6 +14,7 @@ import { loadProfile } from "@/lib/profile";
 
 /** D-SET-02 · Subscription */
 export default function SubscriptionSettings() {
+  const { t } = useLocale();
   const [plansOpen, setPlansOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanId>("free");
   const [billing, setBilling] = useState<BillingDetails | null>(null);
@@ -54,7 +56,7 @@ export default function SubscriptionSettings() {
   const selected = plans.find((item) => item.id === currentPlan) ?? plans[0];
 
   return (
-    <SettingsPage title="Subscription" width={640}>
+    <SettingsPage title={t("subscription")} width={640}>
       <StripeReturn />
       <section className="rounded-[20px] border border-line bg-white px-6 py-5 shadow-xs">
         <div className="flex items-center justify-between">
@@ -151,15 +153,15 @@ export default function SubscriptionSettings() {
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-text-secondary">
         <Lock className="size-3" aria-hidden />
-        Payments are processed securely by Stripe.
+        {t("planStripe")}
       </p>
 
       <PlansDialog
         open={plansOpen}
         onOpenChange={setPlansOpen}
         onNotNow={() => {}}
-        title="Change your plan"
-        description="You can switch or cancel any time."
+        title={t("planChange")}
+        description={t("planSwitch")}
         currentPlan={currentPlan}
         onPlanSaved={(plan) => {
           setCurrentPlan(plan);

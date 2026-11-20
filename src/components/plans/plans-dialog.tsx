@@ -5,11 +5,31 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Avatar } from "@/components/chat/avatar";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import type { MessageKey } from "@/lib/i18n";
 import { characters } from "@/lib/characters";
 import { plans, type PlanId } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+const planName: Record<PlanId, MessageKey> = {
+  free: "planFreeName",
+  individual: "individual",
+  premium: "premium",
+};
+
+const planCta: Record<PlanId, MessageKey> = {
+  free: "planCurrent",
+  individual: "planChooseIndividual",
+  premium: "planChoosePremium",
+};
+
+const planFeature: Record<PlanId, MessageKey[]> = {
+  free: [],
+  individual: ["planAllLessons", "planMistake", "planProgress"],
+  premium: ["planEverything", "planExtra"],
+};
 
 /**
  * D-PAY-01 · Paywall modal (880 wide, 24px radius, 40px padding).
@@ -19,8 +39,8 @@ export function PlansDialog({
   open,
   onOpenChange,
   onNotNow,
-  title = "You've finished 3 lessons – great start!",
-  description = "Unlock every section and keep practising real messages.",
+  title,
+  description,
   currentPlan = "free",
   onPlanSaved,
 }: {
@@ -33,6 +53,9 @@ export function PlansDialog({
   onPlanSaved?: (plan: PlanId) => void;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
+  const heading = title ?? t("planFinished");
+  const summary = description ?? t("planUnlockBody");
   const [saving, setSaving] = useState<PlanId | null>(null);
   const [error, setError] = useState("");
 
@@ -58,7 +81,7 @@ export function PlansDialog({
     const body = (await response.json().catch(() => null)) as { url?: string; plan?: PlanId; error?: string } | null;
     if (!response.ok || !body) {
       setSaving(null);
-      setError(body?.error || "Couldn't open the payment page.");
+      setError(body?.error || t("planPayError"));
       return;
     }
     if (body.url) {
@@ -85,8 +108,8 @@ export function PlansDialog({
           <span className="rounded-full border-2 border-bubble-guide-line">
             <Avatar src={characters.hana.avatar} alt="Hana" size={48} />
           </span>
-          <DialogTitle className="pt-4 text-[26px] leading-9 font-bold">{title}</DialogTitle>
-          <DialogDescription className="pt-1.5 text-[15px] leading-6">{description}</DialogDescription>
+          <DialogTitle className="pt-4 text-[26px] leading-9 font-bold">{heading}</DialogTitle>
+          <DialogDescription className="pt-1.5 text-[15px] leading-6">{summary}</DialogDescription>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -102,17 +125,17 @@ export function PlansDialog({
               >
                 {p.highlighted && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-secondary-text px-3 py-1 font-display text-[11px] leading-[15px] font-bold tracking-[0.6px] whitespace-nowrap text-white">
-                    MOST POPULAR
+                    {t("planMostPopular")}
                   </span>
                 )}
-                <p className="font-display text-sm leading-5 font-semibold text-text-primary">{p.name}</p>
+                <p className="font-display text-sm leading-5 font-semibold text-text-primary">{t(planName[p.id])}</p>
                 <p className="flex items-baseline gap-1 pt-4 font-display">
                   <span className="text-[28px] leading-9 font-bold text-text-primary">{p.price}</span>
-                  {p.period && <span className="text-sm text-text-secondary">{p.period}</span>}
+                  {p.period && <span className="text-sm text-text-secondary">{t("planPerMonth")}</span>}
                 </p>
-                {p.description && <p className="pt-4 text-sm leading-5 text-text-secondary">{p.description}</p>}
+                {p.description && <p className="pt-4 text-sm leading-5 text-text-secondary">{t("planFreeDesc")}</p>}
                 <ul className="flex flex-1 flex-col gap-2.5 pt-4 pb-6">
-                  {p.features.map((f) => (
+                  {p.features.map((f, index) => (
                     <li
                       key={f.label}
                       className={cn("flex gap-2 text-sm leading-5", f.soon ? "text-text-secondary" : "text-text-primary")}
@@ -122,7 +145,7 @@ export function PlansDialog({
                         strokeWidth={2.25}
                         aria-hidden
                       />
-                      {f.label}
+                      {t(planFeature[p.id][index] ?? "planExtra")}
                     </li>
                   ))}
                 </ul>
@@ -139,7 +162,7 @@ export function PlansDialog({
                         : "border border-brand-primary bg-white text-text-primary hover:bg-surface-page"
                   )}
                 >
-                  {isCurrent ? "Current plan" : saving === p.id ? (p.id === "free" ? "Saving…" : "Opening…") : p.cta}
+                  {isCurrent ? t("planCurrent") : saving === p.id ? (p.id === "free" ? t("saving") : t("planOpening")) : t(planCta[p.id])}
                 </button>
               </div>
             );
@@ -153,14 +176,14 @@ export function PlansDialog({
         ) : null}
 
         <div className="flex flex-col items-center gap-2 pt-7 text-center">
-          <p className="text-sm leading-5 text-text-secondary">Pay by card, Apple Pay or Google Pay</p>
+          <p className="text-sm leading-5 text-text-secondary">{t("planPay")}</p>
           {/* TODO: employer / team plan page */}
           <a
             href="#"
             className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Building2 className="size-4" aria-hidden />
-            Get Typpi through your employer
+            {t("planEmployer")}
           </a>
           <button
             type="button"
@@ -170,7 +193,7 @@ export function PlansDialog({
             }}
             className="mt-2 rounded-sm px-2 py-1 font-display text-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Not now
+            {t("planNotNow")}
           </button>
         </div>
       </DialogContent>

@@ -54,6 +54,7 @@ export default function LanguageSettings() {
       title={t("languageTitle")}
       description={t("languageDescription")}
       width={640}
+      back
     >
       <LanguagePicker label="Interface language" value={language} detected={detected} onChange={change} compact />
       <div aria-live="polite" className="flex h-[34px] justify-center">

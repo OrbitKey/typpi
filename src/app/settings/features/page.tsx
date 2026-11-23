@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, ChevronDown, Inbox, ListFilter, Plus } from "lucide-react";
+import { ArrowUp, ChevronDown, FilterX, Inbox, ListFilter, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { SettingsPage } from "@/components/settings/settings-nav";
@@ -39,8 +39,15 @@ function asStatus(value: string | null): Status | undefined {
 const statusStyles: Record<Status, string> = {
   Planned: "bg-sky-50 text-sky-800",
   "Under review": "bg-slate-100 text-text-secondary",
-  "In progress": "bg-amber-50 text-amber-800",
+  "In progress": "bg-amber-50 text-amber-800 max-md:bg-rose-50 max-md:text-rose-700",
   Done: "bg-success-tint text-success",
+};
+
+const statusDots: Record<Status, string> = {
+  Planned: "bg-sky-500",
+  "Under review": "bg-slate-400",
+  "In progress": "bg-rose-400",
+  Done: "bg-success",
 };
 
 /** D-SET-04 · Feature board, D-SET-05 · Suggest a feature (modal), D-SET-06 · empty filter */
@@ -151,6 +158,7 @@ export default function FeatureBoard() {
       title="Suggest a feature"
       description="Vote for ideas you want. We read every one."
       width={720}
+      back
       action={
         <Button className="h-10 gap-1 rounded-[10px] px-4 font-normal" onClick={() => setOpen(true)}>
           <Plus className="size-4" aria-hidden />
@@ -158,7 +166,7 @@ export default function FeatureBoard() {
         </Button>
       }
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="Sort features" className="flex rounded-[12px] bg-slate-100 p-1">
           {(["top", "new"] as const).map((s) => (
             <button
@@ -201,15 +209,21 @@ export default function FeatureBoard() {
       {!ready ? (
         <p className="py-16 text-center text-sm text-text-secondary">Loading ideas</p>
       ) : list.length === 0 ? (
-        <div className="flex flex-col items-center gap-1.5 py-16 text-center">
-          <Inbox className="size-9 text-icon-default" strokeWidth={1.5} aria-hidden />
-          <h2 className="pt-3 font-display text-[15px] font-semibold text-text-primary">Nothing here yet</h2>
-          <p className="text-sm text-text-secondary">No ideas with this status yet.</p>
+        <div className="flex flex-col items-center gap-1.5 rounded-[20px] bg-surface-tint px-6 py-16 text-center md:rounded-none md:bg-transparent md:px-0">
+          <span className="relative flex size-16 items-center justify-center rounded-full bg-white text-icon-default">
+            <Inbox className="size-7" strokeWidth={1.5} aria-hidden />
+            <span aria-hidden className="absolute top-3 right-3 size-2 rounded-full bg-action-accent" />
+          </span>
+          <h2 className="pt-3 font-display text-lg font-semibold text-text-primary">Nothing here yet</h2>
+          <p className="max-w-[260px] text-sm leading-5 text-text-secondary">
+            No ideas with this status yet. Help us decide what to ship next!
+          </p>
           <button
             type="button"
             onClick={() => setStatus("all")}
-            className="mt-2 rounded-sm text-sm text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-2 flex items-center gap-1.5 rounded-sm text-sm text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
+            <FilterX className="size-4" aria-hidden />
             Show all ideas
           </button>
         </div>
@@ -218,15 +232,15 @@ export default function FeatureBoard() {
           {list.map((i) => {
             const isVoted = voted.has(i.id);
             return (
-              <li key={i.id} className="flex gap-4 rounded-[16px] border border-line bg-white p-5">
+              <li key={i.id} className="flex gap-3 rounded-[16px] border border-line bg-white p-4 md:gap-4 md:p-5">
                 <button
                   type="button"
                   aria-pressed={isVoted}
                   aria-label={`Vote for ${i.title}, ${i.votes} votes`}
                   onClick={() => toggleVote(i.id)}
                   className={cn(
-                    "flex size-16 shrink-0 flex-col items-center justify-center rounded-[12px] border font-display outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    isVoted ? "border-brand-primary bg-surface-tint text-text-primary" : "border-line bg-white text-text-secondary hover:bg-surface-page"
+                    "flex size-12 shrink-0 flex-col items-center justify-center rounded-[12px] border font-display outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-16",
+                    isVoted ? "border-brand-primary bg-surface-tint text-text-primary" : "border-transparent bg-surface-tint text-text-secondary md:border-line md:bg-white md:hover:bg-surface-page"
                   )}
                 >
                   <ArrowUp className={cn("size-4", isVoted && "text-text-primary")} strokeWidth={2} aria-hidden />
@@ -235,11 +249,17 @@ export default function FeatureBoard() {
                 <div className="min-w-0 flex-1">
                   <h2 className="font-display text-[15px] leading-6 font-semibold text-text-primary">{i.title}</h2>
                   {i.body && <p className="line-clamp-2 pt-1 text-sm leading-[21px] text-text-secondary">{i.body}</p>}
-                  {i.status && (
-                    <span className={cn("mt-3 inline-block rounded-full px-2 py-0.5 font-display text-xs font-medium", statusStyles[i.status])}>
-                      {i.status}
-                    </span>
-                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {isVoted && (
+                      <span className="font-display text-xs font-medium text-brand-secondary-text md:hidden">You upvoted</span>
+                    )}
+                    {i.status && (
+                      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-display text-xs font-medium", statusStyles[i.status])}>
+                        <span aria-hidden className={cn("size-1.5 rounded-full md:hidden", statusDots[i.status])} />
+                        {i.status}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </li>
             );
@@ -248,14 +268,20 @@ export default function FeatureBoard() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-t-3xl max-md:rounded-b-none sm:max-w-[560px]">
           <form onSubmit={submit} className="flex flex-col gap-5 p-2">
+            <span aria-hidden className="mx-auto h-1 w-10 rounded-full bg-slate-200 md:hidden" />
             <DialogHeader>
               <DialogTitle>Suggest a feature</DialogTitle>
               <DialogDescription>Check the list first – someone may have suggested it already.</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="idea-title" className="font-semibold">Title</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="idea-title" className="font-semibold">
+                  Title <span className="text-error">*</span>
+                </Label>
+                <span id="idea-count" className="text-xs text-text-secondary">{title.length}/80</span>
+              </div>
               <Input
                 id="idea-title"
                 autoFocus
@@ -265,7 +291,6 @@ export default function FeatureBoard() {
                 placeholder="Short and clear, e.g. Dark mode"
                 aria-describedby="idea-count"
               />
-              <span id="idea-count" className="self-end text-xs text-text-secondary">{title.length}/80</span>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="idea-body" className="font-semibold">
@@ -278,16 +303,16 @@ export default function FeatureBoard() {
                 placeholder="What problem would this solve for you?"
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-row">
               <DialogClose asChild>
-                <Button type="button" variant="ghost" className="h-10 rounded-[10px] px-4 font-normal text-text-secondary">
+                <Button type="button" variant="outline" className="h-11 flex-1 rounded-[12px] border-0 bg-surface-tint font-normal text-text-primary">
                   Cancel
                 </Button>
               </DialogClose>
               <Button
                 type="submit"
                 disabled={!title.trim() || saving}
-                className="h-10 rounded-[10px] px-4 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100"
+                className="h-11 flex-1 rounded-[12px] disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
               >
                 Submit
               </Button>

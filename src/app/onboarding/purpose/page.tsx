@@ -1,5 +1,6 @@
 "use client";
 
+import { Bell, Plane } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -44,14 +45,17 @@ export default function PurposeStep() {
     <OnboardingShell
       progress={2}
       stepLabel={t("onbStep", { current: "2", total: "3" })}
-      cta={<ContinueButton onClick={() => router.push("/onboarding/level")} />}
+      backHref="/onboarding/language"
+      cta={<ContinueButton hideArrowOnMobile onClick={() => router.push("/onboarding/level")} />}
     >
       <ChatStack className="pb-6">
-        <GuideMessageGroup name={hana.name} avatar={hana.avatar} dimmed>
-          <GuideBubble size="sm" tail="tl">
-            {t("onbWhichLanguage")}
-          </GuideBubble>
-        </GuideMessageGroup>
+        <div className="hidden md:block">
+          <GuideMessageGroup name={hana.name} avatar={hana.avatar} dimmed>
+            <GuideBubble size="sm" tail="tl">
+              {t("onbWhichLanguage")}
+            </GuideBubble>
+          </GuideMessageGroup>
+        </div>
 
         <UserBubble size="sm" tail="tr">
           {languageName}
@@ -87,20 +91,24 @@ export default function PurposeStep() {
         ))}
       </ChoiceGroup>
 
-      <p className="flex flex-col items-center gap-1 py-2 pb-6 text-sm leading-[18px] text-muted-ink">
-        <span className="flex items-center gap-1">
-          {t("onbTravelSoon")}
-          <span aria-hidden className="px-1">
+      <p className="flex flex-col gap-1 py-3 pb-6 text-sm leading-[18px] text-muted-ink md:items-center md:py-2">
+        <span className="flex items-center justify-between gap-3 md:justify-center">
+          <span className="flex items-center gap-2">
+            <Plane className="size-4 md:hidden" aria-hidden />
+            {t("onbTravelSoon")}
+          </span>
+          <span aria-hidden className="hidden px-1 md:inline">
             ·
           </span>
           {travelNotify ? (
-            <span className="font-medium text-text-primary">{t("onbNotifySaved")}</span>
+            <span className="font-semibold text-text-accent md:font-medium md:text-text-primary">{t("onbNotifySaved")}</span>
           ) : (
             <button
               type="button"
               onClick={notify}
-              className="rounded-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex items-center gap-1 rounded-sm font-semibold text-text-accent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:font-medium md:underline md:underline-offset-2"
             >
+              <Bell className="size-3.5 md:hidden" aria-hidden />
               {t("onbNotifyMe")}
             </button>
           )}
@@ -118,9 +126,14 @@ export default function PurposeStep() {
 function PurposeMedia({ id }: { id: PurposeId }) {
   if (id === "work") {
     return (
-      <span className="flex size-12 overflow-hidden rounded-[12px] border border-line-panel p-px shadow-xs">
-        <Avatar src={characters.yuki.avatarSquare} size={46} shape="square" className="rounded-[11px]" />
-      </span>
+      <>
+        <span className="hidden size-12 overflow-hidden rounded-[12px] border border-line-panel p-px shadow-xs md:flex">
+          <Avatar src={characters.yuki.avatarSquare} size={46} shape="square" className="rounded-[11px]" />
+        </span>
+        <span className="flex size-12 items-center justify-center md:hidden">
+          <Avatar src={characters.yuki.avatar} alt="" size={44} />
+        </span>
+      </>
     );
   }
   // Keiko (top-left) overlapping Dr. Mori (bottom-right)

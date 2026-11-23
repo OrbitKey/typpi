@@ -104,7 +104,7 @@ export function LanguagePicker({
   };
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-line bg-white shadow-xs", !compact && "h-[302px]")}>
+    <div className={cn("relative overflow-hidden rounded-2xl border border-line bg-white shadow-xs", !compact && "md:h-[302px]")}>
       <label className="flex items-center gap-2.5 border-b border-line px-3 pt-3 pb-[13px]">
         <Search className="size-[15px] text-icon-default" strokeWidth={2.25} aria-hidden />
         <span className="sr-only">{t("searchLanguage")}</span>
@@ -129,8 +129,9 @@ export function LanguagePicker({
         onKeyDown={onListKeyDown}
         onScroll={updateFades}
         className={cn(
-          compact ? "max-h-[440px]" : "h-[252px]",
-          "overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          compact ? "max-h-[440px]" : "md:h-[252px]",
+          "overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          !compact && "max-md:overflow-visible"
         )}
       >
         {results.map((lang, i) => (
@@ -161,14 +162,14 @@ export function LanguagePicker({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-[47.5px] h-8 bg-gradient-to-b from-white to-white/0 transition-opacity",
+          "pointer-events-none absolute inset-x-0 top-[47.5px] h-8 bg-gradient-to-b from-white to-white/0 transition-opacity max-md:hidden",
           scroll.top ? "opacity-100" : "opacity-0"
         )}
       />
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-white/0 transition-opacity",
+          "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-white/0 transition-opacity max-md:hidden",
           scroll.bottom ? "opacity-100" : "opacity-0"
         )}
       />

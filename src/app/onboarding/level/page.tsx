@@ -27,11 +27,13 @@ export default function LevelStep() {
   return (
     <OnboardingShell
       progress={2.5}
+      mobileProgress={3}
       stepLabel={t("onbStep", { current: "3", total: "3" })}
-      cta={<ContinueButton onClick={() => router.push("/onboarding/start")} />}
+      backHref="/onboarding/purpose"
+      cta={<ContinueButton hideArrowOnMobile onClick={() => router.push("/onboarding/start")} />}
     >
       <ChatStack className="pb-8">
-        <UserBubble>{purposeTitle}</UserBubble>
+        <UserBubble className="max-md:px-4 max-md:py-2 max-md:text-[15px]">{purposeTitle}</UserBubble>
         <div className="flex flex-col gap-1">
           <GuideLabel name={hana.name} avatar={hana.avatar} />
           <GuideBubble tail="bl-4" className="max-w-[507px]">
@@ -44,7 +46,7 @@ export default function LevelStep() {
         label={t("onbTypedBefore")}
         value={level}
         onValueChange={(v) => setLevel(v as LevelId)}
-        className="flex gap-2 pb-8"
+        className="flex flex-col gap-3 pb-8 md:flex-row md:gap-2"
       >
         {levels.map((l) => (
           <LevelTile

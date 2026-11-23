@@ -1,8 +1,8 @@
 "use client";
 
-import { Building2, Check } from "lucide-react";
+import { ArrowRight, Building2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/chat/avatar";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -58,6 +58,11 @@ export function PlansDialog({
   const summary = description ?? t("planUnlockBody");
   const [saving, setSaving] = useState<PlanId | null>(null);
   const [error, setError] = useState("");
+  const [picked, setPicked] = useState<PlanId>(currentPlan === "individual" ? "premium" : "individual");
+
+  useEffect(() => {
+    if (open) setPicked(currentPlan === "individual" ? "premium" : "individual");
+  }, [open, currentPlan]);
 
   const choose = async (id: PlanId) => {
     if (id === currentPlan || saving) return;
@@ -103,16 +108,97 @@ export function PlansDialog({
         if (!o) onNotNow();
       }}
     >
-      <DialogContent className="max-w-[880px] gap-0 p-10 sm:max-w-[880px]">
-        <div className="flex flex-col items-center pb-8 text-center">
+      <DialogContent className="max-w-none gap-0 overflow-y-auto p-5 shadow-none max-md:inset-0 max-md:top-0 max-md:left-0 max-md:h-dvh max-md:max-h-dvh max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-w-none md:max-w-[880px] md:p-10 md:shadow-2xl max-md:[&_[data-slot=dialog-close]]:top-3 max-md:[&_[data-slot=dialog-close]]:right-auto max-md:[&_[data-slot=dialog-close]]:left-2">
+        <div className="flex flex-col items-center pb-5 text-center md:pb-8">
           <span className="rounded-full border-2 border-bubble-guide-line">
-            <Avatar src={characters.hana.avatar} alt="Hana" size={48} />
+            <Avatar src={characters.hana.avatar} alt="" size={56} className="md:hidden" />
+            <Avatar src={characters.hana.avatar} alt="Hana" size={48} className="hidden md:inline-flex" />
           </span>
-          <DialogTitle className="pt-4 text-[26px] leading-9 font-bold">{heading}</DialogTitle>
+          <DialogTitle className="pt-4 text-[22px] leading-7 font-bold md:text-[26px] md:leading-9">{heading}</DialogTitle>
           <DialogDescription className="pt-1.5 text-[15px] leading-6">{summary}</DialogDescription>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="flex flex-col gap-3 md:hidden">
+          {(["individual", "free", "premium"] as PlanId[]).map((id) => {
+            const plan = plans.find((item) => item.id === id)!;
+            const isCurrent = plan.id === currentPlan;
+            const expanded = picked === plan.id && plan.features.length > 0;
+            if (!expanded) {
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => setPicked(plan.id)}
+                  aria-pressed={picked === plan.id}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 rounded-[16px] border px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    picked === plan.id ? "border-brand-primary bg-surface-tint" : "border-line bg-white"
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="block font-display text-[15px] leading-5 font-semibold text-text-primary">{t(planName[plan.id])}</span>
+                    <span className={cn("block text-[13px] leading-5 text-text-secondary", plan.id !== "premium" && "truncate")}>
+                      {plan.id === "free" ? (
+                        t("planFreeDesc")
+                      ) : plan.id === "premium" ? (
+                        <>
+                          {t("planEverything")}
+                          <br />+ {t("planExtra")}
+                        </>
+                      ) : (
+                        t("planAllLessons")
+                      )}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-display text-[15px] font-semibold text-text-primary">
+                      {plan.price}
+                      {plan.period ? plan.period.replace(" ", "") : ""}
+                    </span>
+                    {isCurrent && (
+                      <span className="rounded-full bg-surface-page px-2 py-1 font-display text-[11px] font-medium text-text-secondary">
+                        {t("planCurrent")}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <div key={plan.id} className="relative rounded-[20px] bg-surface-tint px-4 py-4">
+                {plan.highlighted && (
+                  <span className="absolute top-4 right-4 rounded-full bg-brand-secondary px-2 py-1 font-display text-[10px] leading-none font-bold tracking-[0.4px] text-white uppercase">
+                    {t("planMostPopular")}
+                  </span>
+                )}
+                <p className="font-display text-[15px] font-semibold text-text-primary">{t(planName[plan.id])}</p>
+                <p className="flex items-baseline gap-1 pt-1 font-display">
+                  <span className="text-[22px] leading-7 font-bold text-text-primary">{plan.price}</span>
+                  {plan.period && <span className="text-sm text-text-secondary">{t("planPerMonth")}</span>}
+                </p>
+                <ul className="flex flex-col gap-2 pt-3">
+                  {plan.features.map((feature, index) => (
+                    <li key={feature.label} className="flex items-center gap-2 text-sm text-text-primary">
+                      <Check className="size-4 shrink-0 text-text-primary" strokeWidth={2.25} aria-hidden />
+                      {t(planFeature[plan.id][index] ?? "planExtra")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            disabled={picked === currentPlan || saving !== null}
+            onClick={() => choose(picked)}
+            className="mt-1 flex h-12 w-full items-center justify-center gap-1.5 rounded-[14px] bg-brand-primary font-display text-[15px] font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+          >
+            {picked === currentPlan ? t("planCurrent") : saving === picked ? t("planOpening") : t(planCta[picked])}
+            {picked !== currentPlan && saving !== picked && <ArrowRight className="size-4" aria-hidden />}
+          </button>
+        </div>
+
+        <div className="hidden gap-4 md:grid md:grid-cols-3">
           {plans.map((p) => {
             const isCurrent = p.id === currentPlan;
             return (
@@ -175,14 +261,14 @@ export function PlansDialog({
           </p>
         ) : null}
 
-        <div className="flex flex-col items-center gap-2 pt-7 text-center">
+        <div className="flex flex-col items-center gap-3 pt-4 text-center md:gap-2 md:pt-7">
           <p className="text-sm leading-5 text-text-secondary">{t("planPay")}</p>
           {/* TODO: employer / team plan page */}
           <a
             href="#"
-            className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring md:no-underline md:hover:underline"
           >
-            <Building2 className="size-4" aria-hidden />
+            <Building2 className="hidden size-4 md:block" aria-hidden />
             {t("planEmployer")}
           </a>
           <button
@@ -191,7 +277,7 @@ export function PlansDialog({
               onOpenChange(false);
               onNotNow();
             }}
-            className="mt-2 rounded-sm px-2 py-1 font-display text-sm font-medium text-text-accent underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-1 rounded-sm px-2 py-1 font-display text-sm font-medium text-text-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring md:mt-2 md:text-text-accent md:underline md:underline-offset-2"
           >
             {t("planNotNow")}
           </button>

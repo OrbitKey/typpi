@@ -147,9 +147,51 @@ export default function LessonCompletePage() {
     }
   };
 
+  const quizActions = (
+    <>
+      <button
+        type="button"
+        onClick={check}
+        className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 max-md:order-2"
+      >
+        Check
+        <ArrowRight className="size-4 md:hidden" aria-hidden />
+      </button>
+      <button
+        type="button"
+        onClick={() => setSkipped(true)}
+        className="mx-auto block rounded-sm py-1 font-display text-sm font-medium text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring max-md:order-1"
+      >
+        Skip quiz
+      </button>
+    </>
+  );
+
+  const finishActions = (
+    <>
+      <button
+        type="button"
+        onClick={continueAfterLesson}
+        disabled={plan === null}
+        className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
+      >
+        {paid ? t("goToPathway") : "Next lesson: Asking for a day off"}
+        <ArrowRight className="size-4" aria-hidden />
+      </button>
+      <Link
+        href="/pathway"
+        className="rounded-sm py-1 text-center font-display text-sm font-medium text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        Back to pathway
+      </Link>
+    </>
+  );
+
   return (
-    <div className="flex min-h-screen bg-white">
-      <AppRail active="chats" />
+    <div className="flex min-h-dvh bg-surface-page md:min-h-screen md:bg-white">
+      <div className="hidden md:contents">
+        <AppRail active="chats" />
+      </div>
       <ChatList
         unit={lesson.unit}
         unitTitle={lesson.unitTitle}
@@ -158,7 +200,7 @@ export default function LessonCompletePage() {
         done
       />
 
-      <main className="flex h-screen min-w-0 flex-1 flex-col">
+      <main className="flex h-dvh min-w-0 flex-1 flex-col md:h-screen">
         <LessonHeader
           name={yuki.name}
           subtitle="Your manager · Work"
@@ -171,24 +213,34 @@ export default function LessonCompletePage() {
           done
         />
 
-        <div className="flex flex-1 items-center justify-center overflow-y-auto px-8 py-10">
-          <div className="flex w-full max-w-[640px] flex-col gap-4">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 md:items-center md:justify-center md:px-8 md:py-10">
+          <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4">
             {/* Result card */}
-            <section className="flex items-center gap-4 rounded-[20px] border border-line bg-white px-5 py-[18px] shadow-xs">
+            <section className="flex flex-col items-center gap-3 rounded-[20px] border border-line bg-white px-5 py-6 text-center shadow-xs md:flex-row md:items-center md:gap-4 md:py-[18px] md:text-left">
               <span className="relative">
-                <Avatar src={yuki.avatar} alt={yuki.name} size={52} />
-                <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full border-2 border-white bg-success text-white">
+                <Avatar src={yuki.avatar} alt={yuki.name} size={72} className="md:hidden" />
+                <Avatar src={yuki.avatar} alt="" size={52} className="hidden md:inline-flex" />
+                <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full border-2 border-white bg-success text-white md:size-5">
                   <Check className="size-2.5" strokeWidth={3.5} aria-hidden />
                 </span>
               </span>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col items-center gap-1.5 md:items-start md:gap-1">
+                <p className="font-display text-[11px] leading-4 font-semibold tracking-[0.8px] text-brand-secondary uppercase md:hidden">
+                  Lesson complete
+                </p>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-display text-base leading-5 font-semibold text-text-primary">
-                    Lesson complete · Running late
+                  <h1 className="font-display text-xl leading-6 font-semibold text-text-primary md:text-base md:leading-5">
+                    <span className="md:hidden">Running late</span>
+                    <span className="hidden md:inline">Lesson complete · Running late</span>
                   </h1>
-                  <Stars value={2} size={15} />
+                  <span className="hidden md:inline-flex">
+                    <Stars value={2} size={15} />
+                  </span>
                 </div>
-                <p className="flex items-center gap-2 font-display text-[13px] leading-4 text-text-secondary">
+                <span className="md:hidden">
+                  <Stars value={2} size={18} />
+                </span>
+                <p className="flex items-center gap-2 rounded-full bg-surface-tint px-3 py-1 font-display text-[13px] leading-4 text-text-secondary md:rounded-none md:bg-transparent md:px-0 md:py-0">
                   <span className="font-semibold text-text-primary">+60 XP</span>
                   <span aria-hidden>·</span>
                   <span>3:12</span>
@@ -200,21 +252,28 @@ export default function LessonCompletePage() {
 
             {!done && !skipped ? (
               /* D-END-01 · Quick check */
-              <section aria-labelledby="quiz-q" className="rounded-[20px] border border-line bg-white p-6 shadow-xs">
+              <section aria-labelledby="quiz-q" className="rounded-[20px] border border-line bg-white p-6 shadow-xs max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none">
                 <div className="flex items-center justify-between">
                   <p className="font-display text-xs leading-4 font-semibold tracking-[0.6px] text-text-secondary uppercase">
                     Quick check · {q + 1} of {questions.length}
                   </p>
-                  <span className="flex gap-1.5" aria-hidden>
+                  <span className="flex items-center gap-1.5" aria-hidden>
                     {questions.map((_, i) => (
-                      <span key={i} className={cn("size-2 rounded-full", i <= q ? "bg-brand-primary" : "bg-slate-200")} />
+                      <span
+                        key={i}
+                        className={cn(
+                          "rounded-full md:size-2",
+                          i === q ? "h-1 w-6 bg-brand-primary md:h-2 md:w-2" : "size-1.5",
+                          i !== q && (i < q ? "bg-brand-primary" : "bg-slate-200")
+                        )}
+                      />
                     ))}
                   </span>
                 </div>
-                <h2 id="quiz-q" className="pt-5 pb-4 text-[17px] leading-7 font-medium text-text-primary">
+                <h2 id="quiz-q" className="pt-4 pb-4 text-[22px] leading-7 font-semibold text-text-primary md:pt-5 md:text-[17px] md:font-medium">
                   {current.question}
                 </h2>
-                <div role="radiogroup" aria-labelledby="quiz-q" className="grid grid-cols-3 gap-3">
+                <div role="radiogroup" aria-labelledby="quiz-q" className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   {current.options.map((o, i) => (
                     <button
                       key={o.base + o.rest}
@@ -223,13 +282,22 @@ export default function LessonCompletePage() {
                       aria-checked={selected === i}
                       onClick={() => setSelected(i)}
                       className={cn(
-                        "flex h-24 items-center justify-center rounded-2xl border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        "flex items-center justify-start gap-3 rounded-2xl border px-4 py-3.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-24 md:justify-center md:px-0 md:py-0",
                         selected === i
                           ? "border-[1.5px] border-brand-primary bg-surface-tint"
                           : "border-line bg-white hover:bg-surface-page"
                       )}
                     >
-                      <span lang="ja" className="font-jp text-2xl leading-8 text-text-primary">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "flex size-[22px] shrink-0 items-center justify-center rounded-full border-2 md:hidden",
+                          selected === i ? "border-brand-primary" : "border-slate-300"
+                        )}
+                      >
+                        {selected === i && <span className="size-2.5 rounded-full bg-brand-primary" />}
+                      </span>
+                      <span lang="ja" className="font-jp text-xl leading-8 text-text-primary md:text-2xl">
                         <ruby>
                           {o.base}
                           <rt className="text-xs leading-[14px] text-text-secondary">{o.ruby}</rt>
@@ -239,20 +307,7 @@ export default function LessonCompletePage() {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={check}
-                  className="mt-5 h-12 w-full rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  Check
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSkipped(true)}
-                  className="mx-auto mt-3 block rounded-sm font-display text-sm font-medium text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Skip quiz
-                </button>
+                <div className="mt-5 hidden flex-col gap-3 md:flex">{quizActions}</div>
               </section>
             ) : (
               /* D-END-02 · After quiz */
@@ -278,7 +333,7 @@ export default function LessonCompletePage() {
                     <span className="flex items-center gap-3">
                       <Avatar src={characters.hana.avatar} alt="Hana" size={36} />
                       <span className="font-display text-xs leading-[14px] font-bold tracking-[0.6px] text-[#6d28d9]">
-                        CULTURE TIP
+                        <span className="md:hidden">HANA · </span>CULTURE TIP
                       </span>
                     </span>
                     <button
@@ -288,7 +343,8 @@ export default function LessonCompletePage() {
                       className="flex h-[30px] items-center gap-1.5 rounded-[10px] border border-line bg-white px-3 font-display text-xs font-semibold text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {saved ? <BookmarkCheck className="size-3.5" aria-hidden /> : <Bookmark className="size-3.5" aria-hidden />}
-                      {saved ? "Saved to Phrases" : "Save to Phrases"}
+                      <span className="md:hidden">{saved ? "Saved" : "Save phrase"}</span>
+                      <span className="hidden md:inline">{saved ? "Saved to Phrases" : "Save to Phrases"}</span>
                     </button>
                   </div>
                   <h2 className="pt-4 text-[17px] leading-6 font-semibold text-text-primary">
@@ -297,6 +353,12 @@ export default function LessonCompletePage() {
                   <p className="pt-1.5 text-sm leading-[23px] text-text-primary">
                     In Japan, message your manager before your shift starts if you&apos;ll be late. Always give an arrival time.
                   </p>
+                  <div className="mt-3 rounded-xl bg-white px-3 py-2.5 md:hidden">
+                    <p className="font-display text-xs leading-4 text-text-secondary">Key pattern</p>
+                    <p className="pt-0.5 text-[15px] leading-6 font-medium text-text-primary">
+                      <span lang="ja">10分ほど遅れます</span> (I&apos;ll be ~10 mins late)
+                    </p>
+                  </div>
                   {saveError ? (
                     <p role="alert" className="pt-2 text-sm text-error">
                       {saveError}
@@ -304,26 +366,13 @@ export default function LessonCompletePage() {
                   ) : null}
                 </section>
 
-                <div className="flex flex-col items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={continueAfterLesson}
-                    disabled={plan === null}
-                    className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand-primary font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
-                  >
-                    {paid ? t("goToPathway") : "Next lesson: Asking for a day off"}
-                    <ArrowRight className="size-4" aria-hidden />
-                  </button>
-                  <Link
-                    href="/pathway"
-                    className="rounded-sm py-1 font-display text-sm font-medium text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Back to pathway
-                  </Link>
-                </div>
+                <div className="hidden flex-col items-center gap-3 pt-2 md:flex">{finishActions}</div>
               </>
             )}
           </div>
+        </div>
+        <div className="flex flex-col items-center gap-2 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          {done || skipped ? finishActions : quizActions}
         </div>
       </main>
 

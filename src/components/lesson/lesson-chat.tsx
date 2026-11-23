@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -20,6 +20,7 @@ import { LessonHeader } from "@/components/lesson/lesson-header";
 import {
   CharacterMessage,
   CultureTip,
+  TaskBubble,
   TypingMessage,
   DraftBubble,
   HintMessage,
@@ -228,7 +229,7 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
     if (phase === "typing") {
       if (error) {
         states[error.pressed.toUpperCase()] = "error";
-        states[error.expected.toUpperCase()] = "error";
+        states[error.expected.toUpperCase()] = "next";
       } else if (expectedKey) {
         states[expectedKey.toUpperCase()] = "next";
       }
@@ -244,8 +245,10 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
   const completedSteps = phase === "sent" ? lesson.step + 1 : lesson.step;
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <AppRail active="chats" />
+    <div className="flex min-h-dvh bg-white md:min-h-screen">
+      <div className="hidden md:contents">
+        <AppRail active="chats" />
+      </div>
       <ChatList
         unit={lesson.unit}
         unitTitle={lesson.unitTitle}
@@ -253,7 +256,7 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
         progressLabel={phase === "sent" ? `${completedSteps}/${lesson.totalSteps}` : undefined}
       />
 
-      <main className="flex h-screen min-w-0 flex-1 flex-col">
+      <main className="flex h-dvh min-w-0 flex-1 flex-col md:h-screen">
         <LessonHeader
           name={yuki.name}
           subtitle="Your manager · Work"
@@ -266,9 +269,11 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
         />
 
         {/* Message stream */}
-        <div ref={streamRef} className="flex-1 overflow-y-auto overscroll-contain px-8 py-6">
-          <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col justify-end gap-6">
-            <Timestamp>{lesson.timestamp}</Timestamp>
+        <div ref={streamRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-8 md:py-6">
+          <div className="mx-auto flex min-h-full w-full max-w-[760px] flex-col justify-end gap-4 md:gap-6">
+            <div className="hidden md:flex">
+              <Timestamp>{lesson.timestamp}</Timestamp>
+            </div>
 
             <CharacterMessage
               avatar={yuki.avatar}
@@ -277,6 +282,14 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
               romaji={lesson.incoming.romaji}
               translation={lesson.incoming.translation}
               showTranslation={translations}
+            />
+
+            <TaskBubble
+              avatar={hana.avatar}
+              goal={task.goal}
+              glossary={task.glossary}
+              xp={earnedXp}
+              done={phase === "sent"}
             />
 
             {phase === "sent" ? (
@@ -367,16 +380,19 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                   showTranslation={translations}
                   withChips={false}
                 />
-                <CultureTip>{lesson.cultureTip}</CultureTip>
+                <div className="hidden md:block">
+                  <CultureTip>{lesson.cultureTip}</CultureTip>
+                </div>
               </>
             )}
           </div>
         </div>
 
         {/* Bottom dock */}
-        <footer className="relative border-t border-slate-200 bg-white px-8 pt-[17px] pb-4 shadow-[0px_-4px_15px_-3px_rgba(0,0,0,0.06)]">
+        <footer className="relative border-t border-slate-200 bg-white px-3 pt-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0px_-4px_15px_-3px_rgba(0,0,0,0.06)] md:px-8 md:pt-[17px] md:pb-4">
           <div className="mx-auto flex w-full max-w-[760px] flex-col gap-3">
             <TaskCard
+              className="hidden md:flex"
               goal={task.goal}
               glossary={task.glossary}
               xp={earnedXp}
@@ -389,7 +405,7 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                 <button
                   type="button"
                   onClick={() => router.push("/lesson/complete")}
-                  className="flex h-11 w-28 items-center justify-center gap-1.5 rounded-2xl bg-brand-primary font-display text-sm font-semibold text-white shadow-cta outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-brand-primary font-display text-sm font-semibold text-white shadow-cta outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-11 md:w-28"
                 >
                   Next
                   <ArrowRight className="size-4" aria-hidden />
@@ -400,6 +416,24 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                 <div className="flex items-center gap-3">
                   <RomajiBar
                     error={!!error || kanjiWrong !== null}
+                    extra={
+                      <>
+                        <HintButton
+                          used={hints.length}
+                          max={task.maxHints}
+                          onClick={addHint}
+                          className="h-auto gap-1 border-0 bg-transparent px-1 py-0 text-[13px] shadow-none hover:bg-transparent"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Enter"
+                          onClick={() => onKey("Enter")}
+                          className="flex size-7 items-center justify-center rounded-full text-text-secondary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <ChevronUp className="size-4" aria-hidden />
+                        </button>
+                      </>
+                    }
                     helper={
                       phase === "kanji"
                         ? "Pick a kanji to send · Esc to edit kana"
@@ -418,11 +452,12 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                       <RomajiSteps syllables={syllables} syl={syl} chr={chr} error={error} />
                     )}
                   </RomajiBar>
-                  <HintButton used={hints.length} max={task.maxHints} onClick={addHint} />
+                  <HintButton used={hints.length} max={task.maxHints} onClick={addHint} className="hidden md:flex" />
                   <ActionButton
                     label="Send"
                     enabled={phase === "kanji" && kanjiWrong === null}
                     onClick={() => chooseKanji(kanjiFocus)}
+                    className="hidden md:flex"
                   />
                 </div>
 
@@ -444,6 +479,15 @@ export function LessonChat({ lesson }: { lesson: Lesson }) {
                   />
                 )}
 
+                <p className="text-center font-display text-[13px] leading-4 font-medium text-text-secondary md:hidden">
+                  {phase === "kanji"
+                    ? "Press Enter"
+                    : error
+                      ? `Press ${error.expected.toUpperCase()}`
+                      : expectedKey
+                        ? `Press ${expectedKey.toUpperCase()}`
+                        : "Press Enter"}
+                </p>
                 <Keyboard
                   keyStates={keyStates}
                   onKey={onKey}

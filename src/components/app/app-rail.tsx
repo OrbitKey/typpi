@@ -10,9 +10,9 @@ import { type MessageKey } from "@/lib/i18n";
 import { loadProfile, profileInitial } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
-const nav: { href: string; label: MessageKey; icon: typeof GraduationCap }[] = [
+const nav: { href: string; mobileHref?: string; label: MessageKey; icon: typeof GraduationCap }[] = [
   { href: "/pathway", label: "pathway", icon: GraduationCap },
-  { href: "/lesson", label: "chats", icon: MessageCircle },
+  { href: "/lesson", mobileHref: "/chats", label: "chats", icon: MessageCircle },
   { href: "/phrases", label: "phrases", icon: Bookmark },
 ];
 
@@ -46,7 +46,12 @@ export function AppRail({
   }, [pathname]);
 
   const tabs: { href: string; label: MessageKey; icon: typeof GraduationCap; key: NonNullable<typeof active> }[] = [
-    ...nav.map((item) => ({ ...item, key: item.label as "pathway" | "chats" | "phrases" })),
+    ...nav.map((item) => ({
+      href: item.mobileHref ?? item.href,
+      label: item.label,
+      icon: item.icon,
+      key: item.label as "pathway" | "chats" | "phrases",
+    })),
     { href: "/settings", label: "profile", icon: UserRound, key: "settings" },
   ];
 

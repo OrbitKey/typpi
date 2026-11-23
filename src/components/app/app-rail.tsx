@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, GraduationCap, MessageCircle } from "lucide-react";
+import { Bookmark, GraduationCap, MessageCircle, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,7 +20,14 @@ const nav: { href: string; label: MessageKey; icon: typeof GraduationCap }[] = [
  * Left icon rail (72px) — one Sidebar Nav component for every app screen
  * (resolves the "72px vs 63px" open note in Figma).
  */
-export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" | "settings" }) {
+export function AppRail({
+  active,
+  mobileNav = false,
+}: {
+  active?: "pathway" | "chats" | "phrases" | "settings";
+  /** Phone layout: bottom tabs instead of the side rail. */
+  mobileNav?: boolean;
+}) {
   const pathname = usePathname();
   const { t } = useLocale();
   const [initial, setInitial] = useState("?");
@@ -38,8 +45,43 @@ export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" |
     };
   }, [pathname]);
 
+  const tabs: { href: string; label: MessageKey; icon: typeof GraduationCap; key: NonNullable<typeof active> }[] = [
+    ...nav.map((item) => ({ ...item, key: item.label as "pathway" | "chats" | "phrases" })),
+    { href: "/settings", label: "profile", icon: UserRound, key: "settings" },
+  ];
+
   return (
-    <aside className="sticky top-0 flex h-screen w-[72px] shrink-0 flex-col items-center justify-between border-r border-slate-200 bg-white py-5">
+    <>
+    {mobileNav && (
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-white px-2 pt-1 pb-[max(0.4rem,env(safe-area-inset-bottom))] md:hidden"
+      >
+        {tabs.map(({ href, label, icon: Icon, key }) => {
+          const isActive = active ? key === active : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl py-1.5 font-display text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive ? "font-semibold text-text-primary" : "font-medium text-text-secondary"
+              )}
+            >
+              <span className={cn("flex h-7 items-center rounded-full px-3", isActive && "bg-surface-tint")}>
+                <Icon className="size-5" strokeWidth={1.75} aria-hidden />
+              </span>
+              {t(label)}
+            </Link>
+          );
+        })}
+      </nav>
+    )}
+    <aside className={cn(
+      "sticky top-0 h-screen w-[72px] shrink-0 flex-col items-center justify-between border-r border-slate-200 bg-white py-5",
+      mobileNav ? "hidden md:flex" : "flex"
+    )}>
       <div className="flex w-full flex-col items-center gap-7">
         <Link
           href="/pathway"
@@ -110,5 +152,6 @@ export function AppRail({ active }: { active?: "pathway" | "chats" | "phrases" |
         </span>
       </Link>
     </aside>
+    </>
   );
 }

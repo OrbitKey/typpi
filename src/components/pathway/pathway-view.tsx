@@ -125,17 +125,17 @@ export function PathwayView() {
 
   if (accountPlan === null) {
     return (
-      <div className="flex min-h-screen bg-white">
-        <AppRail active="pathway" />
+      <div className="flex min-h-screen bg-surface-page md:bg-white">
+        <AppRail active="pathway" mobileNav />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <AppRail active="pathway" />
+    <div className="flex min-h-screen bg-surface-page md:bg-white">
+      <AppRail active="pathway" mobileNav />
 
-      <main className="min-w-0 flex-1">
+      <main className="min-w-0 flex-1 pb-24 md:pb-0">
         {free && banner && (
           <div className="flex h-[45px] items-center gap-3 border-b border-line-panel bg-surface-tint px-6 font-display text-[13px]">
             <div className="mx-auto flex w-full max-w-[880px] items-center gap-3">
@@ -165,11 +165,11 @@ export function PathwayView() {
           </div>
         )}
 
-        <div className={cn("mx-auto flex w-full max-w-[880px] flex-col px-6", free ? "gap-5 pt-4 pb-10" : "gap-10 pt-9 pb-16")}>
+        <div className={cn("mx-auto flex w-full max-w-[880px] flex-col px-4 md:px-6", free ? "gap-5 pt-4 pb-8 md:pb-10" : "gap-5 pt-5 pb-8 md:gap-10 md:pt-9 md:pb-16")}>
           {/* Greeting */}
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="font-display text-[24px] leading-8 font-semibold tracking-[-0.3px] text-text-primary">
+              <h1 className="font-display text-[22px] leading-7 font-semibold tracking-[-0.3px] text-text-primary md:text-[24px] md:leading-8">
                 {t(partOfDay)}{firstName ? `, ${firstName}` : ""}
               </h1>
               <p className="pt-0.5 text-sm leading-5 text-text-secondary">
@@ -185,10 +185,12 @@ export function PathwayView() {
           {/* Up next */}
           <section
             aria-label={t("upNext")}
-            className="flex items-center gap-5 rounded-[20px] border border-line bg-white px-7 py-6"
+            className="flex flex-col gap-4 rounded-[20px] border border-line bg-white px-4 py-4 md:flex-row md:items-center md:gap-5 md:px-7 md:py-6"
           >
+            <div className="flex min-w-0 items-center gap-3 md:contents">
             <span className="relative">
-              <Avatar src={yuki.avatar} alt={yuki.name} size={56} />
+              <Avatar src={yuki.avatar} alt={yuki.name} size={44} className="md:hidden" />
+              <Avatar src={yuki.avatar} alt="" size={56} className="hidden md:inline-flex" />
               {!nextLocked && (
                 <span className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-white bg-success" />
               )}
@@ -212,10 +214,11 @@ export function PathwayView() {
                 )}
               </p>
             </div>
+            </div>
             {workComplete ? (
               <Link
                 href="/pathway/complete"
-                className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-11 md:w-auto"
               >
                 {t("continue")}
                 <ArrowRight className="size-4" aria-hidden />
@@ -224,7 +227,7 @@ export function PathwayView() {
               <button
                 type="button"
                 onClick={() => setPlansOpen(true)}
-                className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-5 font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-primary px-5 font-display text-sm font-semibold text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-11 md:w-auto"
               >
                 {t("pathUnlockAll")}
                 <ArrowRight className="size-4" aria-hidden />
@@ -232,7 +235,7 @@ export function PathwayView() {
             ) : isPlayableLesson(next.id) ? (
               <Link
                 href="/lesson"
-                className="flex h-11 items-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-primary px-6 font-display text-[15px] font-medium text-white outline-none hover:bg-brand-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-11 md:w-auto"
               >
                 {t("continue")}
                 <ArrowRight className="size-4" aria-hidden />
@@ -241,7 +244,7 @@ export function PathwayView() {
               <button
                 type="button"
                 disabled
-                className="flex h-11 cursor-default items-center rounded-[12px] bg-surface-tint px-6 font-display text-[15px] font-medium text-text-secondary"
+                className="flex h-12 w-full cursor-default items-center justify-center rounded-[12px] bg-surface-tint px-6 font-display text-[15px] font-medium text-text-secondary md:h-11 md:w-auto"
               >
                 {t("pathComingSoon")}
               </button>
@@ -256,9 +259,9 @@ export function PathwayView() {
 
             {/* Section 1: Work */}
             <article className="overflow-hidden rounded-[20px] border border-line bg-white">
-              <header className={cn("flex items-center gap-4 px-6", free ? "py-4" : "py-6")}>
+              <header className={cn("flex items-center gap-3 px-4 md:gap-4 md:px-6", free ? "py-4" : "py-4 md:py-6")}>
                 <Avatar src={yuki.avatar} alt={yuki.name} size={free ? 40 : 48} />
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2">
                     <span className="font-display text-[17px] leading-6 font-semibold text-text-primary">{t("pathWork")}</span>
                     {!workComplete && (
@@ -267,12 +270,13 @@ export function PathwayView() {
                       </span>
                     )}
                   </p>
-                  <p className="text-[13px] leading-5 text-text-secondary">{t("pathRoleAfter", { name: yuki.name, role: t("secManager") })}</p>
+                  <p className="truncate text-[13px] leading-5 text-text-secondary">{t("pathRoleAfter", { name: yuki.name, role: t("secManager") })}</p>
                 </div>
                 <div className={cn("flex items-center gap-2", !free && "flex-col items-end gap-1")}>
                   {!free && (
                     <span className="font-display text-xs font-semibold text-text-primary">
-                      {t("pathOfLessons", { done: String(completed), total: String(workLessons.length) })}
+                      <span className="md:hidden">{completed}/{workLessons.length}</span>
+                      <span className="hidden md:inline">{t("pathOfLessons", { done: String(completed), total: String(workLessons.length) })}</span>
                     </span>
                   )}
                   <span
@@ -281,7 +285,7 @@ export function PathwayView() {
                     aria-valuemin={0}
                     aria-valuemax={workLessons.length}
                     aria-valuenow={completed}
-                    className="block h-1 w-24 overflow-hidden rounded-full bg-surface-tint"
+                    className="block h-1 w-10 overflow-hidden rounded-full bg-surface-tint md:w-24"
                   >
                     <span
                       className="block h-full rounded-full bg-brand-primary"
@@ -369,7 +373,7 @@ export function PathwayView() {
                         status={i < completed ? "done" : i === completed ? "current" : "locked"}
                       />
                     ))}
-                    <li className="flex items-center gap-4 rounded-2xl px-4 py-3" aria-label={t("pathReviewLocked")}>
+                    <li className="flex items-center gap-4 rounded-2xl bg-surface-page px-4 py-3 md:bg-transparent" aria-label={t("pathReviewLocked")}>
                       <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-action-accent/10 text-brand-secondary-text">
                         <Trophy className="size-3.5" aria-hidden />
                       </span>
@@ -392,14 +396,14 @@ export function PathwayView() {
                   key={s.id}
                   id={`section-${s.id}`}
                   aria-label={`${t(sectionTitle[s.id])}, ${t("pathLocked")}`}
-                  className={cn("flex items-center gap-4 rounded-[20px] border border-line bg-white px-6", free ? "py-3" : "py-4")}
+                  className={cn("flex items-center gap-3 rounded-[20px] border border-line bg-white px-4 md:gap-4 md:px-6", free ? "py-3" : "py-3 md:py-4")}
                 >
                   <Avatar src={c.avatar} alt={c.name} size={free ? 36 : 44} grayscale />
                   <div className="flex-1">
                     <p className={cn("font-display font-semibold text-text-primary", free ? "text-[13px]" : "text-[17px]")}>
                       {t(sectionTitle[s.id])}
                     </p>
-                    <p className="text-[13px] text-text-secondary">
+                    <p className="truncate text-[13px] text-text-secondary">
                       {t("pathRoleAfter", { name: c.name, role: t(sectionRole[s.id]) })}
                     </p>
                   </div>
@@ -411,7 +415,7 @@ export function PathwayView() {
               );
             })}
 
-            <div className="flex items-center gap-3 rounded-[20px] border border-line bg-surface-page px-6 py-4">
+            <div className="flex items-center gap-3 rounded-[20px] border border-line bg-white px-4 py-3 md:bg-surface-page md:px-6 md:py-4">
               <span className="flex size-8 items-center justify-center rounded-[10px] bg-surface-tint text-text-primary">
                 <Compass className="size-4" aria-hidden />
               </span>
@@ -425,7 +429,7 @@ export function PathwayView() {
                 <button
                   type="button"
                   onClick={notify}
-                  className="rounded-sm font-display text-[13px] font-semibold text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded-full border border-line bg-white px-3 py-1.5 font-display text-[13px] font-semibold text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring md:rounded-sm md:border-0 md:bg-transparent md:px-0 md:py-0 md:hover:underline"
                 >
                   {t("onbNotifyMe")}
                 </button>
@@ -519,11 +523,9 @@ function LessonRow({
       )}
       <span className="min-w-0 flex-1 text-left">
         <span className="block text-[15px] leading-5 text-text-primary">{lesson.title}</span>
-        {status !== "locked" && (
-          <span className="block truncate font-display text-xs leading-5 font-medium text-text-primary">
-            {status === "done" ? t("pathCompletedSub", { subtitle: lesson.subtitle }) : lesson.subtitle}
-          </span>
-        )}
+        <span className={cn("block truncate font-display text-xs leading-5 font-medium text-text-primary", status === "locked" && "text-text-secondary md:hidden")}>
+          {status === "done" ? t("pathCompletedSub", { subtitle: lesson.subtitle }) : lesson.subtitle}
+        </span>
       </span>
       {status === "done" && lesson.stars !== undefined && <Stars value={lesson.stars} size={13} />}
       {status === "current" && !playable && (

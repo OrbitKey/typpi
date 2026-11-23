@@ -21,7 +21,7 @@ export default function LanguageStep() {
     <OnboardingShell
       progress={1}
       stepLabel={t("onbStep", { current: "1", total: "3" })}
-      cta={<ContinueButton onClick={next} />}
+      cta={<ContinueButton hideArrowOnMobile onClick={next} />}
     >
       <ChatStack className="pb-8">
         <GuideIdentity name={characters.hana.name} avatar={characters.hana.avatar} />

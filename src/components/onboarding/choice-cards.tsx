@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Keyboard, Zap } from "lucide-react";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -98,23 +98,53 @@ export function LevelTile({
     <RadioGroupPrimitive.Item
       value={value}
       className={cn(
-        "flex min-h-[140px] min-w-0 flex-1 flex-col gap-5 rounded-2xl border p-[17px] text-left drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "flex w-full min-w-0 rounded-2xl border text-left drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "items-center gap-3 p-4 md:min-h-[140px] md:flex-1 md:flex-col md:items-stretch md:gap-5 md:p-[17px]",
         selected
           ? "border-brand-primary bg-surface-tint"
           : "border-line-soft bg-white hover:bg-surface-page"
       )}
     >
-      <span className="flex h-8 w-full items-start justify-end pt-0.5">
+      <LevelIcon id={value} selected={selected} />
+      <span className="hidden h-8 w-full items-start justify-end pt-0.5 md:flex">
         {selected && (
           <span className="flex size-5 items-center justify-center rounded-full bg-brand-primary text-white">
             <Check className="size-[11px]" strokeWidth={3} aria-hidden />
           </span>
         )}
       </span>
-      <span className="flex flex-col gap-1">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:gap-1">
         <span className="text-[17px] leading-[21.25px] font-semibold text-ink">{title}</span>
         <span className="text-sm leading-[19.25px] text-muted-ink">{description}</span>
       </span>
+      <span className="md:hidden">
+        {selected ? (
+          <span className="flex size-6 items-center justify-center rounded-full bg-brand-primary text-white">
+            <Check className="size-[13px]" strokeWidth={3} aria-hidden />
+          </span>
+        ) : (
+          <span className="block size-6 rounded-full border-[1.5px] border-icon-default" />
+        )}
+      </span>
     </RadioGroupPrimitive.Item>
+  );
+}
+
+function LevelIcon({ id, selected }: { id: string; selected: boolean }) {
+  return (
+    <span
+      className={cn(
+        "flex size-10 shrink-0 items-center justify-center rounded-xl text-ink md:hidden",
+        selected ? "bg-white" : "bg-surface-tint"
+      )}
+    >
+      {id === "little" ? (
+        <span className="font-display text-[15px] leading-none font-semibold">A</span>
+      ) : id === "confident" ? (
+        <Zap className="size-4" aria-hidden />
+      ) : (
+        <Keyboard className="size-4" aria-hidden />
+      )}
+    </span>
   );
 }

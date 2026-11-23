@@ -104,7 +104,7 @@ export function LanguagePicker({
   };
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-line bg-white shadow-xs", !compact && "h-[302px]")}>
+    <div className={cn("relative overflow-hidden rounded-2xl border border-line bg-white shadow-xs", !compact && "md:h-[302px]")}>
       <label className="flex items-center gap-2.5 border-b border-line px-3 pt-3 pb-[13px]">
         <Search className="size-[15px] text-icon-default" strokeWidth={2.25} aria-hidden />
         <span className="sr-only">{t("searchLanguage")}</span>
@@ -129,8 +129,9 @@ export function LanguagePicker({
         onKeyDown={onListKeyDown}
         onScroll={updateFades}
         className={cn(
-          compact ? "max-h-[440px]" : "h-[252px]",
-          "overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          compact ? "max-h-none md:max-h-[440px]" : "md:h-[252px]",
+          "overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          !compact && "max-md:overflow-visible"
         )}
       >
         {results.map((lang, i) => (
@@ -161,14 +162,14 @@ export function LanguagePicker({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-[47.5px] h-8 bg-gradient-to-b from-white to-white/0 transition-opacity",
+          "pointer-events-none absolute inset-x-0 top-[47.5px] h-8 bg-gradient-to-b from-white to-white/0 transition-opacity max-md:hidden",
           scroll.top ? "opacity-100" : "opacity-0"
         )}
       />
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-white/0 transition-opacity",
+          "pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-white/0 transition-opacity max-md:hidden",
           scroll.bottom ? "opacity-100" : "opacity-0"
         )}
       />
@@ -209,11 +210,12 @@ function LanguageRow({
       )}
     >
       {detected ? (
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2 md:gap-3">
           <span className="lang-native text-[17px] leading-[25.5px] font-semibold text-ink">
             {lang.native}
           </span>
-          <span className="rounded-full border border-line bg-white px-[9px] py-[3px] text-xs leading-[16.5px] font-semibold tracking-[0.275px] text-muted-ink uppercase">
+          <span className="text-sm text-text-secondary md:hidden">({t("detected")})</span>
+          <span className="hidden rounded-full border border-line bg-white px-[9px] py-[3px] text-xs leading-[16.5px] font-semibold tracking-[0.275px] text-muted-ink uppercase md:inline">
             {t("detected")}
           </span>
         </span>
@@ -238,10 +240,16 @@ function LanguageRow({
         aria-hidden
         className={cn(
           "flex size-6 shrink-0 items-center justify-center rounded-full",
-          selected && !compact && "bg-brand-primary text-white"
+          selected && !compact && "bg-brand-primary text-white",
+          selected && compact && "bg-brand-primary text-white md:bg-transparent md:text-text-primary"
         )}
       >
-        {selected && <Check className={compact ? "size-4 text-text-primary" : "size-[13px]"} strokeWidth={compact ? 2 : 3} />}
+        {selected && (
+          <Check
+            className={compact ? "size-3.5 text-white md:size-4 md:text-text-primary" : "size-[13px]"}
+            strokeWidth={compact ? 3 : 3}
+          />
+        )}
       </span>
     </div>
   );

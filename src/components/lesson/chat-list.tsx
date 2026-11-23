@@ -26,7 +26,7 @@ export function ChatList({
   return (
     <section
       aria-label="Chats"
-      className="sticky top-0 flex h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white"
+      className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col border-r border-slate-200 bg-white md:flex"
     >
       <header className="border-b border-slate-200/60 px-5 pt-6 pb-[17px] font-display">
         <p className="text-[13px] leading-[19.5px] font-semibold tracking-[0.65px] text-text-secondary uppercase">

@@ -9,6 +9,8 @@ export type PathLesson = {
   subtitle: string;
   /** Lessons 4–6 need a paid plan */
   paid?: boolean;
+  /** Set only when the lesson script exists. Other rows have no duration yet. */
+  minutes?: number;
 };
 
 /** Lessons that have a playable chat. The others are titles on the path only. */
@@ -17,7 +19,7 @@ export function isPlayableLesson(id: string) {
 }
 
 export const workLessons: PathLesson[] = [
-  { id: "running-late", title: "Running late", subtitle: "Apologizing politely" },
+  { id: "running-late", title: "Running late", subtitle: "Apologizing politely", minutes: 3 },
   { id: "day-off", title: "Asking for a day off", subtitle: "Negotiating dates & requesting permissions" },
   // TODO(copy): subtitle for "Changing a shift" isn't in Figma
   { id: "changing-shift", title: "Changing a shift", subtitle: "Swapping shifts with a coworker" },

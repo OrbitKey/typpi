@@ -37,7 +37,7 @@ export function GuideBubble({
   return (
     <div
       className={cn(
-        "w-fit max-w-[490px] rounded-2xl bg-bubble-guide text-ink drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]",
+        "w-fit max-w-[min(100%,490px)] rounded-2xl bg-bubble-guide text-ink drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]",
         sizeClasses[size],
         size === "sm" && "text-ink-soft",
         tailClasses[tail],
@@ -65,7 +65,7 @@ export function UserBubble({
     <div className="flex w-full justify-end">
       <div
         className={cn(
-          "w-fit max-w-[461px] rounded-2xl bg-surface-tint text-ink drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]",
+          "w-fit max-w-[min(100%,461px)] rounded-2xl bg-surface-tint text-ink drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]",
           size === "md" ? "px-6 py-2 text-base leading-[26px]" : sizeClasses.sm,
           size === "sm" && "font-medium",
           tailClasses[tail],
@@ -124,7 +124,7 @@ export function GuideMessageGroup({
       <span className="shrink-0 rounded-full border border-bubble-guide-line shadow-xs">
         <Avatar src={avatar} size={30} />
       </span>
-      <div className="flex max-w-[461px] flex-col gap-1.5">
+      <div className="flex min-w-0 max-w-[461px] flex-col gap-1.5">
         <span className="h-[19.5px] text-[13px] leading-[19.5px] font-semibold text-muted-ink">
           {name}
         </span>

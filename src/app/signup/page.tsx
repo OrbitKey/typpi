@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, RotateCw } from "lucide-react";
+import { AlarmClock, ArrowLeft, ArrowRight, Check, Clock, Mail, RotateCw, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/chat/avatar";
 import { GuideBubble } from "@/components/chat/bubbles";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { ChoiceGroup } from "@/components/onboarding/choice-cards";
 import { Label } from "@/components/ui/label";
 import { Stars } from "@/components/ui/stars";
@@ -19,15 +20,12 @@ import { cn } from "@/lib/utils";
 
 type Step = "start" | "email" | "sent" | "goal";
 
-const goals = [
-  { v: "5", label: "Casual" },
-  { v: "10", label: "Regular" },
-  { v: "15", label: "Serious" },
-];
+const goals = ["5", "10", "15"] as const;
 
 /** D-ACC-01…04 · Save your progress → email → magic link → daily goal */
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [step, setStep] = useState<Step>("start");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -51,7 +49,7 @@ export default function SignupPage() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         if (failed) {
-          setEmailError("That sign-in didn't work. Try again.");
+          setEmailError(t("signAuthError"));
           setStep("start");
         }
         return;
@@ -95,7 +93,7 @@ export default function SignupPage() {
   const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Enter a valid email address, like you@email.com");
+      setEmailError(t("signBadEmail"));
       return;
     }
     if (await sendLink()) setStep("sent");
@@ -112,7 +110,7 @@ export default function SignupPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSaving(false);
-      setEmailError("Sign in again to save your goal.");
+      setEmailError(t("signSignInAgain"));
       setStep("email");
       return;
     }
@@ -159,45 +157,98 @@ export default function SignupPage() {
     router.push("/pathway");
   };
 
+  const lessonParts = t("signLessonComplete").split(" · ");
+  const lessonTitle = lessonParts[0] ?? t("signLessonComplete");
+  const lessonName = lessonParts[1] ?? "";
+
   return (
-    <div className="flex min-h-screen justify-center bg-white px-4 pt-[120px] pb-[120px]">
+    <div className="flex min-h-dvh justify-center bg-white px-4 pt-2 pb-6 md:min-h-screen md:pt-[120px] md:pb-[120px]">
       <div className="flex w-full max-w-[608px] flex-col">
-        <header className="h-[52px]">
-          <Logo size="medium" />
+        <header className="flex h-14 items-center justify-between md:h-[52px]">
+          <div className="flex items-center gap-2">
+            {(step === "email" || step === "sent") && (
+              <button
+                type="button"
+                aria-label="Back"
+                onClick={() => setStep(step === "sent" ? "email" : "start")}
+                className="flex size-8 items-center justify-center rounded-full text-ink outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+              >
+                <ArrowLeft className="size-5" aria-hidden />
+              </button>
+            )}
+            <Logo size="small" className="md:hidden" />
+            <Logo size="medium" className="hidden md:inline-flex" />
+          </div>
+          {step === "start" && (
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => router.back()}
+              className="flex size-8 items-center justify-center rounded-full text-ink outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            >
+              <X className="size-5" aria-hidden />
+            </button>
+          )}
         </header>
 
         <div className="flex flex-col gap-4 pt-1">
           {step === "start" && (
-            <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+            <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 md:border-0 md:p-4 md:shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
               <Avatar src={characters.yuki.avatar} alt="Yuki Tanaka" size={44} />
-              <div className="flex flex-col gap-0.5">
-                <p className="font-display text-[15px] font-semibold text-text-primary">Lesson complete · Running late</p>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <p className="font-display text-[15px] font-semibold text-text-primary">{t("signLessonComplete")}</p>
                 <p className="flex items-center gap-2">
                   <Stars value={2} size={12} />
-                  <span className="rounded-full bg-action-accent/15 px-1.5 py-px font-display text-[11px] leading-4 font-bold text-brand-secondary-text">
+                  <span className="hidden rounded-full bg-action-accent/15 px-1.5 py-px font-display text-[11px] leading-4 font-bold text-brand-secondary-text md:inline">
                     +60 XP
                   </span>
                 </p>
+              </div>
+              <span className="font-display text-[13px] font-bold text-brand-secondary-text md:hidden">+60 XP</span>
+            </div>
+          )}
+
+          {(step === "email" || step === "sent") && (
+            <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 md:hidden">
+              <span className="relative shrink-0">
+                <Avatar src={characters.yuki.avatar} alt="Yuki Tanaka" size={44} />
+                <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-white bg-success" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[15px] leading-5 font-semibold text-text-primary">{lessonTitle}</p>
+                {lessonName ? <p className="text-sm leading-5 text-text-secondary">{lessonName}</p> : null}
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <Stars value={2} size={12} />
+                <span className="rounded-full bg-surface-tint px-2 py-0.5 font-display text-[11px] leading-4 font-bold text-brand-secondary-text">
+                  +60 XP
+                </span>
               </div>
             </div>
           )}
 
           {(step === "start" || step === "email") && (
-            <HanaSays label={step === "start"}>
+            <HanaSays label={step === "start" ? true : "mobile"}>
               <GuideBubble size="sm" tail="tl">
-                Great first message! <span aria-hidden>🎉</span>
+                {t("signGreat")} <span aria-hidden>🎉</span>
               </GuideBubble>
               <GuideBubble size="sm" tail="none">
-                Save your progress so you don&apos;t lose it – it takes 10 seconds.
+                {t("signSaveProgress")}
               </GuideBubble>
             </HanaSays>
           )}
 
-          {step === "email" && <SentBubble>Continue with email</SentBubble>}
+          {step === "email" && (
+            <div className="hidden md:block">
+              <SentBubble>{t("signContinueEmail")}</SentBubble>
+            </div>
+          )}
 
           {step === "sent" && (
             <>
-              <SentBubble>{email}</SentBubble>
+              <div className="hidden md:block">
+                <SentBubble>{email}</SentBubble>
+              </div>
               <div className="flex flex-col gap-2">
                 <span className="flex items-center gap-2">
                   <Avatar src={characters.hana.avatar} alt="Hana" size={32} />
@@ -205,14 +256,14 @@ export default function SignupPage() {
                 </span>
                 <div className="flex flex-col gap-1.5 pl-8">
                   <GuideBubble size="sm" tail="tl">
-                    Check your inbox <span aria-hidden>✉️</span>
+                    {t("signCheckInbox")} <span aria-hidden>✉️</span>
                   </GuideBubble>
                   <GuideBubble size="sm" tail="none">
-                    I sent a sign-in link to{" "}
+                    {t("signSentTo")}{" "}
                     <span className="font-semibold text-text-primary underline decoration-action-accent underline-offset-4">
                       {email}
                     </span>
-                    . Open it on this device.
+                    . {t("signOpenDevice")}
                   </GuideBubble>
                 </div>
               </div>
@@ -226,38 +277,47 @@ export default function SignupPage() {
                   <Avatar src={characters.hana.avatar} alt="Hana" size={40} />
                   <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-white bg-success" />
                 </span>
-                <GuideBubble size="md" tail="tl" className="max-w-[394px]">
-                  You&apos;re in! How much time can you practise each day?
-                </GuideBubble>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="font-display text-xs leading-4 font-bold tracking-[0.6px] text-text-secondary md:hidden">
+                    HANA
+                  </span>
+                  <GuideBubble size="md" tail="tl" className="max-w-[394px]">
+                    {t("signYoureIn")}
+                  </GuideBubble>
+                </div>
               </div>
 
               <ChoiceGroup
-                label="Choose your daily practice goal"
+                label={t("signChooseGoal")}
                 value={goal}
                 onValueChange={setGoal}
-                className="grid grid-cols-3 gap-2 pt-3"
+                className="flex flex-col gap-3 pt-1 md:grid md:grid-cols-3 md:gap-2 md:pt-3"
               >
-                {goals.map((o) => {
-                  const selected = goal === o.v;
+                {goals.map((minutes) => {
+                  const selected = goal === minutes;
+                  const goalLabel = minutes === "5" ? t("signCasual") : minutes === "15" ? t("signSerious") : t("signRegular");
                   return (
                     <RadioGroupPrimitive.Item
-                      key={o.v}
-                      value={o.v}
+                      key={minutes}
+                      value={minutes}
                       className={cn(
-                        "relative flex h-[82px] flex-col items-start justify-center rounded-2xl border px-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                        selected ? "border-brand-primary bg-surface-tint" : "border-line bg-white hover:bg-surface-page"
+                        "relative flex h-14 items-center justify-between rounded-2xl border px-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-[82px] md:flex-col md:items-start md:justify-center",
+                        selected ? "border-brand-primary bg-surface-tint max-md:border-2" : "border-line bg-white hover:bg-surface-page"
                       )}
                     >
-                      <span className="flex items-baseline font-display">
-                        <span className="text-xl leading-7 font-bold text-text-primary">{o.v}</span>
-                        <span className="text-sm text-text-secondary">min</span>
+                      <span className="font-display text-[15px] font-semibold text-text-primary md:hidden">
+                        {minutes} {t("signMin")} – {goalLabel}
                       </span>
-                      <span className={cn("text-sm leading-5", selected ? "font-semibold text-text-primary" : "text-text-secondary")}>
-                        {o.label}
+                      <span className="hidden items-baseline font-display md:flex">
+                        <span className="text-xl leading-7 font-bold text-text-primary">{minutes}</span>
+                        <span className="text-sm text-text-secondary">{t("signMin")}</span>
+                      </span>
+                      <span className={cn("hidden text-sm leading-5 md:inline", selected ? "font-semibold text-text-primary" : "text-text-secondary")}>
+                        {goalLabel}
                       </span>
                       {selected && (
-                        <span className="absolute top-4 right-4 flex size-4 items-center justify-center rounded-full bg-brand-primary text-white">
-                          <Check className="size-2.5" strokeWidth={3.5} aria-hidden />
+                        <span className="flex size-5 items-center justify-center rounded-full bg-brand-primary text-white md:absolute md:top-4 md:right-4 md:size-4">
+                          <Check className="size-3 md:size-2.5" strokeWidth={3.5} aria-hidden />
                         </span>
                       )}
                     </RadioGroupPrimitive.Item>
@@ -272,14 +332,14 @@ export default function SignupPage() {
                   </span>
                   <div>
                     <Label htmlFor="reminder" className="text-[15px] font-normal">
-                      Remind me every day
+                      {t("signRemind")}
                     </Label>
-                    <p className="text-xs leading-4 text-text-secondary">By email</p>
+                    <p className="text-xs leading-4 text-text-secondary">{t("signByEmail")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex h-[26px] items-center gap-1 rounded-[8px] border border-line-panel bg-surface-page px-2 font-display text-xs font-medium text-text-primary focus-within:ring-2 focus-within:ring-ring">
-                    <span className="sr-only">Reminder time</span>
+                    <span className="sr-only">{t("signReminderTime")}</span>
                     <select
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
@@ -287,8 +347,8 @@ export default function SignupPage() {
                     >
                       {Array.from({ length: 34 }, (_, i) => {
                         const m = 6 * 60 + i * 30;
-                        const t = `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`;
-                        return <option key={t}>{t}</option>;
+                        const slot = `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`;
+                        return <option key={slot}>{slot}</option>;
                       })}
                     </select>
                     <Clock className="size-3" aria-hidden />
@@ -301,14 +361,14 @@ export default function SignupPage() {
         </div>
 
         {/* Pinned dock */}
-        <div className="mt-auto flex flex-col items-center gap-3 pt-10">
+        <div className="mt-auto flex flex-col items-center gap-3 pt-6 md:pt-10">
           {step === "start" && (
             <>
               <SocialButton provider="Google" onError={setEmailError} />
               <SocialButton provider="Facebook" onError={setEmailError} />
               <PrimaryButton onClick={() => setStep("email")}>
                 <Mail className="size-4" aria-hidden />
-                Continue with email
+                {t("signContinueEmail")}
               </PrimaryButton>
               {emailError && (
                 <p role="alert" className="text-center text-sm text-error">
@@ -316,22 +376,22 @@ export default function SignupPage() {
                 </p>
               )}
               <p className="pt-1 text-center text-xs leading-[18px] text-text-secondary">
-                By continuing you agree to the{" "}
-                <Link href="/terms" className="underline underline-offset-2">Terms</Link> and{" "}
-                <Link href="/privacy" className="underline underline-offset-2">Privacy Policy</Link>.
+                {t("signAgree")}{" "}
+                <Link href="/terms" className="underline underline-offset-2">{t("terms")}</Link> {t("signAnd")}{" "}
+                <Link href="/privacy" className="underline underline-offset-2">{t("signPrivacyPolicy")}</Link>.
               </p>
               <p className="text-sm text-text-primary">
-                Already have an account?{" "}
-                <a href="#" className="font-bold underline underline-offset-2">Log in</a>
+                {t("signHaveAccount")}{" "}
+                <a href="#" className="font-semibold text-text-accent md:font-bold md:text-text-primary md:underline md:underline-offset-2">{t("signLogIn")}</a>
               </p>
             </>
           )}
 
           {step === "email" && (
-            <form onSubmit={submitEmail} noValidate className="flex w-full flex-col gap-3 rounded-2xl bg-surface-tint p-6">
-              <label className="flex h-[52px] items-center gap-3 rounded-[12px] bg-white px-4 focus-within:ring-2 focus-within:ring-brand-primary/30">
+            <form onSubmit={submitEmail} noValidate className="flex w-full flex-col gap-3 md:rounded-2xl md:bg-surface-tint md:p-6">
+              <label className="flex h-[52px] items-center gap-3 rounded-[12px] border border-line bg-white px-4 focus-within:ring-2 focus-within:ring-brand-primary/30 md:border-0">
                 <Mail className="size-4 text-icon-default" aria-hidden />
-                <span className="sr-only">Email</span>
+                <span className="sr-only">{t("email")}</span>
                 <input
                   ref={emailRef}
                   type="email"
@@ -343,6 +403,16 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-secondary"
                 />
+                {email ? (
+                  <button
+                    type="button"
+                    aria-label="Clear"
+                    onClick={() => setEmail("")}
+                    className="flex size-6 items-center justify-center rounded-full text-text-secondary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                ) : null}
               </label>
               {emailError && (
                 <p id="email-error" role="alert" className="text-sm text-error">
@@ -350,7 +420,7 @@ export default function SignupPage() {
                 </p>
               )}
               <PrimaryButton type="submit" className="font-bold" disabled={sending}>
-                {sending ? "Sending…" : "Send me a link"}
+                {sending ? t("signSending") : t("signSendLink")}
                 <ArrowRight className="size-4" aria-hidden />
               </PrimaryButton>
               <button
@@ -359,41 +429,52 @@ export default function SignupPage() {
                 className="mx-auto flex items-center gap-1 rounded-sm px-2 py-1.5 font-display text-sm text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ArrowLeft className="size-3.5" aria-hidden />
-                Other options
+                {t("signOtherOptions")}
               </button>
+              <p className="text-center text-sm text-text-secondary md:hidden">{t("signNoPassword")}</p>
             </form>
           )}
 
           {step === "sent" && (
             <>
-              <button
-                type="button"
-                onClick={resendLink}
-                disabled={sending}
-                className="flex items-center gap-1.5 rounded-sm font-display text-sm font-medium text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              <a
+                href={email ? `mailto:${email}` : "mailto:"}
+                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] border border-line bg-white font-display text-[15px] font-semibold text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring md:hidden"
               >
-                <RotateCw className="size-3.5" aria-hidden />
-                {resent ? "Link sent again" : "Resend link"}
-              </button>
+                <Mail className="size-4" aria-hidden />
+                {t("signOpenEmail")}
+              </a>
+              <div className="flex items-center justify-center gap-2 md:flex-col md:gap-3">
+                <button
+                  type="button"
+                  onClick={resendLink}
+                  disabled={sending}
+                  className="flex items-center gap-1.5 rounded-sm font-display text-sm font-semibold text-text-accent outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 md:font-medium md:text-text-primary"
+                >
+                  <RotateCw className="hidden size-3.5 md:block" aria-hidden />
+                  {resent ? t("signResent") : t("signResend")}
+                </button>
+                <span aria-hidden className="text-text-secondary md:hidden">·</span>
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="rounded-sm font-display text-sm text-text-secondary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:underline md:underline-offset-2"
+                >
+                  {t("signDifferentEmail")}
+                </button>
+              </div>
               {emailError && (
                 <p role="alert" className="text-sm text-error">
                   {emailError}
                 </p>
               )}
-              <button
-                type="button"
-                onClick={() => setStep("email")}
-                className="rounded-sm font-display text-sm text-text-secondary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Use a different email
-              </button>
             </>
           )}
 
           {step === "goal" && (
             <>
               <PrimaryButton onClick={saveGoal} disabled={saving}>
-                {saving ? "Saving…" : "Start next lesson"}
+                {saving ? t("saving") : t("signStartNext")}
                 <ArrowRight className="size-4" aria-hidden />
               </PrimaryButton>
               {emailError && (
@@ -409,14 +490,21 @@ export default function SignupPage() {
   );
 }
 
-function HanaSays({ label, children }: { label?: boolean; children: React.ReactNode }) {
+function HanaSays({ label, children }: { label?: boolean | "mobile"; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
       <Avatar src={characters.hana.avatar} alt="Hana" size={40} />
-      <div className="flex flex-col gap-1.5">
-        {label && (
-          <span className="font-display text-xs leading-4 font-bold tracking-[0.6px] text-text-secondary">HANA</span>
-        )}
+      <div className="flex min-w-0 flex-col gap-1.5">
+        {label ? (
+          <span
+            className={cn(
+              "font-display text-xs leading-4 font-bold tracking-[0.6px] text-text-secondary",
+              label === "mobile" && "md:hidden"
+            )}
+          >
+            HANA
+          </span>
+        ) : null}
         {children}
       </div>
     </div>
@@ -457,6 +545,7 @@ function SocialButton({
   onError: (message: string) => void;
 }) {
   const [pending, setPending] = useState(false);
+  const { t } = useLocale();
 
   const signIn = async () => {
     setPending(true);
@@ -480,10 +569,10 @@ function SocialButton({
       type="button"
       onClick={signIn}
       disabled={pending}
-      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] bg-white font-display text-[15px] text-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.06)] outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
+      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[12px] border border-line bg-white font-display text-[15px] font-medium text-text-primary outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 md:border-0 md:font-normal md:shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
     >
       {provider === "Google" ? <GoogleIcon /> : <FacebookIcon />}
-      {pending ? `Opening ${provider}…` : `Continue with ${provider}`}
+      {pending ? t("signOpening", { provider }) : t("signContinueWith", { provider })}
     </button>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Info, Languages, Pencil, X } from "lucide-react";
+import { Check, Info, Languages, Pencil, X, Zap } from "lucide-react";
 import { useState } from "react";
 
 import { Avatar } from "@/components/chat/avatar";
@@ -89,12 +89,16 @@ export function CharacterMessage({
   const translationVisible = showTranslation || translate;
 
   return (
-    <div className="flex w-full max-w-[560px] items-start gap-3">
-      <span className="mt-1 shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
-        <Avatar src={avatar} alt={name} size={40} />
+    <div className="flex w-full max-w-[560px] flex-col gap-1.5 md:flex-row md:items-start md:gap-3">
+      <span className="flex items-center gap-2 md:mt-1 md:block">
+        <span className="shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
+          <Avatar src={avatar} alt="" size={32} className="md:hidden" />
+          <Avatar src={avatar} alt={name} size={40} className="hidden md:inline-flex" />
+        </span>
+        <span className="font-display text-sm leading-5 font-semibold text-text-primary md:hidden">{name}</span>
       </span>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-2 rounded-2xl rounded-tl-[2px] border border-slate-200 bg-white p-[17px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-2xl rounded-tl-[2px] border border-slate-200 bg-white p-3.5 drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] md:p-[17px]">
           <RubyText lines={lines} furigana={furigana} />
           {showRomaji && (
             <p className="font-display text-[13px] leading-5 text-text-secondary italic">{romaji}</p>
@@ -107,9 +111,10 @@ export function CharacterMessage({
         </div>
 
         {withChips && (
-          <div className="flex items-center gap-2 pl-1">
+          <div className="flex flex-wrap items-center gap-2 pl-1">
             <HelperChip active={furigana} onClick={() => setFurigana((v) => !v)}>
-              <span lang="ja" className="text-[10px] leading-none font-bold">
+              {furigana ? <Check className="size-3 md:hidden" strokeWidth={3} aria-hidden /> : null}
+              <span lang="ja" className="hidden text-[10px] leading-none font-bold md:inline">
                 あ
               </span>
               Furigana
@@ -173,13 +178,13 @@ export function DraftBubble({
     <div className="flex w-full flex-col items-end gap-1.5">
       <div
         className={cn(
-          "rounded-2xl rounded-tr-[2px] border-2 border-dashed px-[22px] py-[14px] font-jp text-[17px] leading-[27.63px] font-medium text-text-primary",
+          "rounded-2xl rounded-tr-[2px] border px-4 py-3 font-jp text-[17px] leading-[27.63px] font-medium text-text-primary md:border-2 md:border-dashed md:px-[22px] md:py-[14px]",
           error ? "border-error-line bg-error-tint" : "border-draft-line bg-surface-tint"
         )}
       >
         {children}
       </div>
-      <p className="flex items-center gap-1 pr-1 font-display text-xs leading-4 font-medium text-text-secondary">
+      <p className="hidden items-center gap-1 pr-1 font-display text-xs leading-4 font-medium text-text-secondary md:flex">
         <Pencil className="size-3.5" aria-hidden />
         Draft · not sent yet
       </p>
@@ -196,7 +201,7 @@ export function DraftBubble({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-sm text-xs leading-4 font-semibold text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="hidden rounded-sm text-xs leading-4 font-semibold text-text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring md:inline"
             >
               Try again
             </button>
@@ -231,21 +236,20 @@ export function SentBubble({
           <Check className="size-2.5" strokeWidth={3.5} aria-label="Sent" />
         </span>
       </div>
-      <p className="pr-1 font-display text-xs leading-[17px] font-medium text-text-secondary">
+      <p className="hidden pr-1 font-display text-xs leading-[17px] font-medium text-text-secondary md:block">
         Sent · {sentAt}
       </p>
 
-      <div className="mt-3 flex items-center gap-3 pt-1" aria-live="polite">
-        {/* Coral circular inkan / stamp */}
-        <span
-          lang="ja"
-          aria-label={stamp.join("")}
-          className="flex size-10 -rotate-12 flex-col items-center justify-center rounded-full border-2 border-action-accent text-center font-jp text-[11px] leading-[12px] font-bold text-action-accent"
-        >
-          {stamp.map((s) => (
-            <span key={s}>{s}</span>
-          ))}
+      <div className="mt-1 flex w-full flex-wrap items-center gap-2 self-start md:hidden" aria-live="polite">
+        <Stamp stamp={stamp} />
+        <span className="rounded-full border border-amber-200/80 bg-amber-50 px-2 py-0.5 font-display text-xs leading-4 font-semibold text-amber-900">
+          +{xp} XP
         </span>
+        <span className="min-w-0 font-display text-xs leading-4 text-text-secondary">{praise}</span>
+      </div>
+
+      <div className="mt-3 hidden items-center gap-3 pt-1 md:flex" aria-live="polite">
+        <Stamp stamp={stamp} />
         <span className="flex flex-col items-start gap-1">
           <span className="rounded-full border border-amber-200/80 bg-amber-50 px-2 py-0.5 font-display text-xs leading-4 font-semibold text-amber-900">
             ⭐ +{xp} XP
@@ -254,6 +258,75 @@ export function SentBubble({
             {praise}
           </span>
         </span>
+      </div>
+    </div>
+  );
+}
+
+function Stamp({ stamp }: { stamp: string[] }) {
+  return (
+    <span
+      lang="ja"
+      aria-label={stamp.join("")}
+      className="flex size-10 shrink-0 -rotate-12 flex-col items-center justify-center rounded-full border-2 border-action-accent text-center font-jp text-[11px] leading-[12px] font-bold text-action-accent"
+    >
+      {stamp.map((s) => (
+        <span key={s}>{s}</span>
+      ))}
+    </span>
+  );
+}
+
+/** Phone-only task from Hana. On a wide screen the same task stays pinned above the keyboard. */
+export function TaskBubble({
+  avatar,
+  goal,
+  glossary,
+  xp,
+  done,
+}: {
+  avatar: string;
+  goal: string;
+  glossary: { ja: string; en: string }[];
+  xp: number;
+  done?: boolean;
+}) {
+  if (done) {
+    return (
+      <div className="md:hidden">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-tint px-3 py-1.5 font-display text-[13px] leading-5 font-medium text-success">
+          <Check className="size-3.5" strokeWidth={3} aria-hidden />
+          {goal}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full items-start gap-2.5 md:hidden">
+      <span className="shrink-0 rounded-full shadow-[0_0_0_1px_#e2e8f0]">
+        <Avatar src={avatar} alt="" size={36} />
+      </span>
+      <div className="min-w-0 flex-1 rounded-2xl bg-bubble-guide px-3.5 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-display text-xs leading-4 font-bold tracking-[0.6px] text-[#6d28d9]">HANA</span>
+          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-display text-xs leading-4 font-semibold text-amber-900">
+            <Zap className="size-3" aria-hidden />+{xp} XP
+          </span>
+        </div>
+        <p className="pt-1.5 text-[15px] leading-[22px] font-medium text-text-primary">{goal}</p>
+        <p className="pt-1 text-xs leading-[18px] text-text-secondary">
+          Hint:{" "}
+          {glossary.map((g, i) => (
+            <span key={g.ja}>
+              {i > 0 && " · "}
+              <span lang="ja" className="font-jp">
+                {g.ja}
+              </span>{" "}
+              = {g.en}
+            </span>
+          ))}
+        </p>
       </div>
     </div>
   );

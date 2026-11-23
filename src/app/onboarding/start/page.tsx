@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -43,6 +44,7 @@ export default function StartStep() {
     <OnboardingShell
       progress={3}
       stepLabel={t("onbStep", { current: "3", total: "3" })}
+      backHref="/onboarding/level"
       cta={
         <ContinueButton
           ref={ctaRef}
@@ -52,14 +54,14 @@ export default function StartStep() {
       }
     >
       <ChatStack className="pb-8">
-        <UserBubble>{purposeTitle}</UserBubble>
+        <UserBubble className="max-md:px-4 max-md:py-2 max-md:text-[15px]">{purposeTitle}</UserBubble>
         <div className="flex flex-col gap-1">
           <GuideLabel name={hana.name} avatar={hana.avatar} />
           <GuideBubble tail="bl-4" className="max-w-[507px]">
             {t("onbTypedBefore")}
           </GuideBubble>
         </div>
-        <UserBubble className="font-medium">{levelTitle}</UserBubble>
+        <UserBubble className="font-medium max-md:px-4 max-md:py-2 max-md:text-[15px]">{levelTitle}</UserBubble>
         <div className="flex flex-col gap-1">
           <GuideLabel name={hana.name} avatar={hana.avatar} />
           <GuideBubble tail="bl-4" className="max-w-[507px] pr-[62px]">
@@ -69,10 +71,11 @@ export default function StartStep() {
       </ChatStack>
 
       <div className="pb-8">
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-white p-[25px] drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-4 drop-shadow-[0px_1px_1px_rgba(0,0,0,0.05)] md:flex-row md:items-center md:justify-between md:p-[25px]">
+          <div className="flex items-center gap-3 md:gap-4">
             <span className="rounded-full bg-line-soft shadow-xs">
-              <Avatar src={partner.avatar} size={56} />
+              <Avatar src={partner.avatar} size={48} className="md:hidden" />
+              <Avatar src={partner.avatar} size={56} className="hidden md:inline-flex" />
             </span>
             <div>
               <h3 className="text-[17px] leading-[21.25px] font-semibold text-ink">
@@ -81,7 +84,8 @@ export default function StartStep() {
               <p className="pt-0.5 text-sm leading-[21px] text-muted-ink">{role}</p>
             </div>
           </div>
-          <span className="rounded-full bg-pill px-3 py-[5px] text-sm leading-[21px] font-medium whitespace-nowrap text-muted-ink">
+          <span className="flex items-center gap-2 rounded-xl bg-surface-tint px-3 py-2.5 text-sm leading-[21px] font-medium text-muted-ink md:rounded-full md:bg-pill md:px-3 md:py-[5px] md:whitespace-nowrap">
+            <MessageSquare className="size-4 shrink-0 text-text-accent md:hidden" aria-hidden />
             {firstLesson}
           </span>
         </div>

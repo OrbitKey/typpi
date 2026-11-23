@@ -1,3 +1,6 @@
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +24,7 @@ export function SegmentedProgress({
       aria-valuemin={0}
       aria-valuemax={segments}
       aria-valuenow={value}
-      className="flex h-1 w-full max-w-[576px] gap-1"
+      className="flex h-1 w-full gap-1 md:mx-auto md:max-w-[576px]"
     >
       {Array.from({ length: segments }, (_, i) => {
         const fill = Math.min(Math.max(value - i, 0), 1);
@@ -49,35 +52,69 @@ export function SegmentedProgress({
  */
 export function OnboardingShell({
   progress,
+  mobileProgress,
   stepLabel,
+  backHref,
   cta,
   children,
 }: {
   progress: number;
+  /** Phone frames fill the current step's segment. Desktop keeps `progress`. */
+  mobileProgress?: number;
   stepLabel: string;
+  backHref?: string;
   cta: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen bg-surface-page px-4 pt-[120px] pb-10">
-      <header className="absolute inset-x-0 top-0 z-10 flex flex-col items-center pb-1 backdrop-blur-[12px]">
-        <div className="flex h-[84px] w-full max-w-[640px] items-center justify-center px-8">
-          <Logo size="large" />
+    <div className="relative min-h-dvh bg-white md:min-h-screen md:bg-surface-page md:px-4 md:pt-[120px] md:pb-10">
+      <header className="sticky top-0 z-20 bg-white md:absolute md:inset-x-0 md:z-10 md:bg-transparent md:backdrop-blur-[12px]">
+        <div className="flex h-14 w-full items-center gap-3 px-4 md:mx-auto md:h-[84px] md:max-w-[640px] md:justify-center md:px-8">
+          {backHref ? (
+            <Link
+              href={backHref}
+              aria-label="Back"
+              className="flex size-8 items-center justify-center rounded-full text-ink outline-none hover:bg-surface-page focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            >
+              <ArrowLeft className="size-5" aria-hidden />
+            </Link>
+          ) : null}
+          <span className="inline-flex items-center gap-1.5 md:hidden">
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-action-accent" />
+            <span className="font-display text-[18px] leading-none font-bold tracking-[-0.18px] text-text-primary">
+              Typpi
+            </span>
+          </span>
+          <Logo size="large" className="hidden md:inline-flex" />
         </div>
-        <SegmentedProgress value={progress} label={stepLabel} />
+        <div className="px-5 pb-3 md:px-0 md:pb-1">
+          {mobileProgress === undefined ? (
+            <SegmentedProgress value={progress} label={stepLabel} />
+          ) : (
+            <>
+              <div className="md:hidden">
+                <SegmentedProgress value={mobileProgress} label={stepLabel} />
+              </div>
+              <div className="hidden md:block">
+                <SegmentedProgress value={progress} label={stepLabel} />
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
-      <main className="relative mx-auto h-[calc(100vh-160px)] min-h-[480px] w-full max-w-[640px] overflow-hidden rounded-3xl border border-line-panel bg-surface-default">
-        <div className="h-full overflow-y-auto overscroll-contain px-8 pt-8 pb-[120px] [scroll-padding-bottom:120px]">
+      <main className="relative mx-auto w-full md:h-[calc(100vh-160px)] md:min-h-[480px] md:max-w-[640px] md:overflow-hidden md:rounded-3xl md:border md:border-line-panel md:bg-surface-default">
+        <div className="px-4 pt-2 pb-28 md:h-full md:overflow-y-auto md:overscroll-contain md:px-8 md:pt-8 md:pb-[120px] md:[scroll-padding-bottom:120px]">
           {children}
         </div>
 
-        {/* Content scrolls under the floating CTA */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[150px] bg-gradient-to-b from-white/0 via-white/95 via-55% to-white"
+          className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[150px] bg-gradient-to-b from-white/0 via-white/95 via-55% to-white md:block"
         />
-        <div className="absolute inset-x-8 bottom-8 pt-1">{cta}</div>
+        <div className="fixed inset-x-0 bottom-0 z-20 bg-white px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-8 md:bottom-8 md:bg-transparent md:p-0 md:pt-1">
+          {cta}
+        </div>
       </main>
     </div>
   );
